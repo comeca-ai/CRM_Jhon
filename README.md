@@ -1,0 +1,39 @@
+# CRM Generativo (CRM_Jhon)
+
+CRM no estilo Attio, mas com uma diferença central: **as telas não são fixas — a IA escreve e evolui as telas** conforme aprende como o time usa o sistema.
+
+## Conceito
+
+Três camadas:
+
+1. **Schema dinâmico** — objetos (Empresas, Contatos, Negócios…) e seus atributos são dados, não código. Novos campos e objetos podem ser criados em runtime, como no Attio.
+2. **Telas como specs JSON** — nenhuma tela é HTML escrito à mão. Cada view é uma definição declarativa (`type`, `object`, `columns`, `groupBy`, `filter`, `sort`) renderizada por um conjunto fechado de componentes (tabela, kanban, record page). A IA compõe specs; ela nunca escreve HTML/CSS livre em produção — isso mantém o sistema previsível e seguro.
+3. **Geração + aprendizado** — o usuário descreve uma tela em linguagem natural ("kanban de negócios por responsável") e a spec nasce na hora. Cada interação (clique em célula, ordenação, abertura de registro) vira sinal de telemetria; o sistema aprende quais campos importam e reotimiza as telas.
+
+## Protótipo
+
+`prototype/crm-generativo.html` — protótipo funcional em um único arquivo, sem dependências. Abra no navegador e:
+
+- navegue pelas telas base (Empresas, Pipeline, Contatos);
+- peça uma tela nova na barra de comando (ex.: "negócios abertos acima de 150 mil", "kanban por responsável");
+- veja no inspetor à direita a **spec JSON** que a "IA" gerou e a telemetria de uso;
+- clique em "Aplicar aprendizado" para reordenar as colunas pelo seu uso real.
+
+No protótipo o gerador é um parser por regras. No produto real, esse é exatamente o ponto onde entra um LLM — recebendo o schema introspectado e devolvendo o **mesmo formato de spec**.
+
+## Specs de exemplo
+
+`specs/` contém exemplos do formato de view spec que o gerador produz.
+
+## Roadmap
+
+- [ ] Backend com schema dinâmico (Postgres + JSONB de atributos, ou EAV) e API de introspecção para o gerador
+- [ ] Gerador de telas com LLM (substituir o parser por regras), com validação de spec contra o schema
+- [ ] Loop de aprendizado persistente: telemetria de uso → sugestões de layout → aceite do usuário
+- [ ] **Integração Granola (MCP)**: reuniões gravadas/transcritas no Granola viram eventos na timeline do registro (empresa/negócio) e alimentam campos como "próximo passo" automaticamente — cobre o caso "gravar reuniões" do Attio sem construir gravação própria
+- [ ] Sincronização de e-mail/calendário para enriquecimento automático de contatos
+- [ ] Permissões por workspace e multiusuário
+
+## Stack prevista
+
+Protótipo: HTML/CSS/JS vanilla. Produto: a definir (sugestão: Next.js + Postgres + camada MCP para integrações como Granola).

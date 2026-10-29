@@ -1,0 +1,10 @@
+{
+  "id": "v-pipeline-owner",
+  "title": "Kanban de negócios por responsável",
+  "object": "deals",
+  "type": "kanban",
+  "groupBy": "owner",
+  "card": ["name", "empresa", "valor"],
+  "generatedBy": "ai",
+  "prompt": "kanban de negócios por responsável"
+}

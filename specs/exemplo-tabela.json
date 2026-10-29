@@ -1,0 +1,11 @@
+{
+  "id": "v-deals-high-value",
+  "title": "Negócios abertos acima de 150 mil",
+  "object": "deals",
+  "type": "table",
+  "columns": ["name", "empresa", "valor", "estagio", "owner"],
+  "filter": { "field": "valor", "op": ">=", "value": 150000 },
+  "sort": { "field": "valor", "dir": "desc" },
+  "generatedBy": "ai",
+  "prompt": "negócios abertos acima de 150 mil por valor"
+}

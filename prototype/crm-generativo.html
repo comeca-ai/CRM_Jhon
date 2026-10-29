@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CRM Generativo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* Layout: app shell — sidebar de views à esquerda, canvas da tela ativa, barra de comando fixa embaixo, inspetor à direita */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --ink:#1a1f2b; --ink-2:#5b6474; --line:#e3e6ec;
+  --accent:#2e5ce6; --accent-ink:#ffffff; --soft:#eef1f6; --good:#13865f; --warn:#b4690e; --gen:#7a3ce8;
+  --font-ui:'Instrument Sans',system-ui,-apple-system,sans-serif;
+  --font-mono:'Fragment Mono',ui-monospace,'SF Mono',monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#101319; --surface:#181c25; --ink:#e8eaf0; --ink-2:#99a1b3; --line:#2a303d;
+  --accent:#6b8cff; --accent-ink:#0d1220; --soft:#222837; --good:#3ecf96; --warn:#e8a04c; --gen:#a97dff;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#101319; --surface:#181c25; --ink:#e8eaf0; --ink-2:#99a1b3; --line:#2a303d;
+  --accent:#6b8cff; --accent-ink:#0d1220; --soft:#222837; --good:#3ecf96; --warn:#e8a04c; --gen:#a97dff;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink); font:14px/1.45 var(--font-ui);
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:0;
+}
+*{box-sizing:border-box}
+#app{display:flex; height:100%; gap:0; min-width:0}
+
+/* ---------- sidebar ---------- */
+#side{width:228px; flex:none; display:flex; flex-direction:column; border-right:1px solid var(--line); padding:14px 10px 10px 0; gap:4px; overflow-y:auto}
+#ws{display:flex; align-items:center; gap:8px; padding:4px 8px 14px}
+#ws .dot{width:22px; height:22px; border-radius:6px; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; font-weight:700; font-size:12px}
+#ws b{font-size:14px}
+#ws small{display:block; color:var(--ink-2); font-size:11px}
+.navhead{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-2); padding:10px 8px 4px}
+.navitem{display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:7px; cursor:pointer; color:var(--ink); border:0; background:none; width:100%; text-align:left; font:inherit}
+.navitem:hover{background:var(--soft)}
+.navitem.active{background:var(--soft); font-weight:600}
+.navitem .ic{width:16px; text-align:center; color:var(--ink-2); font-size:12px}
+.navitem .tag{margin-left:auto; font-size:9.5px; padding:1px 6px; border-radius:99px; background:color-mix(in srgb,var(--gen) 14%,transparent); color:var(--gen); font-weight:600; letter-spacing:.04em}
+
+/* ---------- main ---------- */
+#main{flex:1; min-width:0; display:flex; flex-direction:column}
+#topbar{display:flex; align-items:center; gap:10px; padding:12px 16px; border-bottom:1px solid var(--line); flex-wrap:wrap}
+#vtitle{font-size:16px; font-weight:650; margin:0}
+.vtype{font-size:11px; padding:2px 8px; border-radius:99px; background:var(--soft); color:var(--ink-2); font-weight:600}
+.vgen{font-size:11px; padding:2px 8px; border-radius:99px; background:color-mix(in srgb,var(--gen) 14%,transparent); color:var(--gen); font-weight:600}
+#topbar .spacer{flex:1}
+.btn{font:600 12.5px var(--font-ui); padding:6px 11px; border-radius:7px; border:1px solid var(--line); background:var(--surface); color:var(--ink); cursor:pointer}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+#canvas{flex:1; overflow:auto; padding:14px 16px 90px}
+
+/* table */
+.tablewrap{overflow-x:auto; border:1px solid var(--line); border-radius:10px; background:var(--surface)}
+table{border-collapse:collapse; width:100%; min-width:640px}
+th{font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-2); text-align:left; padding:9px 12px; border-bottom:1px solid var(--line); cursor:pointer; white-space:nowrap; user-select:none}
+th .heat{display:inline-block; margin-left:6px; font-size:9px; color:var(--gen)}
+td{padding:9px 12px; border-bottom:1px solid var(--line); white-space:nowrap; font-variant-numeric:tabular-nums; cursor:pointer}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--soft)}
+.pill{font-size:11px; padding:2px 8px; border-radius:99px; background:var(--soft); font-weight:600}
+.pill.g{background:color-mix(in srgb,var(--good) 15%,transparent); color:var(--good)}
+.pill.w{background:color-mix(in srgb,var(--warn) 16%,transparent); color:var(--warn)}
+.pill.a{background:color-mix(in srgb,var(--accent) 13%,transparent); color:var(--accent)}
+
+/* kanban */
+.kanban{display:flex; gap:12px; align-items:flex-start; overflow-x:auto; padding-bottom:8px}
+.kcol{flex:0 0 240px; background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px}
+.kcol h4{margin:0 0 8px; font-size:12px; display:flex; justify-content:space-between; color:var(--ink-2)}
+.kcard{border:1px solid var(--line); border-radius:8px; padding:9px 10px; margin-bottom:8px; cursor:pointer; background:var(--bg)}
+.kcard:hover{border-color:var(--accent)}
+.kcard b{font-size:13px; display:block; margin-bottom:3px}
+.kcard small{color:var(--ink-2); display:block}
+.kcard .val{font-weight:650; font-variant-numeric:tabular-nums; margin-top:4px; font-size:12.5px}
+
+/* ---------- inspector (spec + aprendizado) ---------- */
+#inspector{width:300px; flex:none; border-left:1px solid var(--line); padding:14px 0 14px 14px; overflow-y:auto; display:flex; flex-direction:column; gap:14px}
+#inspector h3{margin:0; font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--ink-2); display:flex; align-items:center; gap:6px}
+#spec{font:11px/1.55 var(--font-mono); background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:10px; overflow-x:auto; margin:0; color:var(--ink)}
+#spec .k{color:var(--accent)} #spec .s{color:var(--good)} #spec .n{color:var(--warn)}
+.learnrow{display:flex; align-items:center; gap:8px; font-size:12px; padding:3px 0}
+.learnrow .bar{height:6px; border-radius:99px; background:var(--gen); min-width:4px}
+.learnrow .fname{width:92px; flex:none; color:var(--ink-2); overflow:hidden; text-overflow:ellipsis}
+.learnrow .cnt{margin-left:auto; font-variant-numeric:tabular-nums; color:var(--ink-2); font-size:11px}
+#learnhint{font-size:12px; color:var(--ink-2); border:1px dashed var(--line); border-radius:9px; padding:9px 10px}
+#learnhint b{color:var(--gen)}
+
+/* ---------- command bar ---------- */
+#cmdbar{position:fixed; left:0; right:0; bottom:0; display:flex; justify-content:center; padding:0 max(16px,env(safe-area-inset-left,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-right,0px)); pointer-events:none}
+#cmd{pointer-events:auto; display:flex; gap:8px; width:min(640px,100%); background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:8px; box-shadow:0 8px 28px rgba(10,15,30,.14)}
+#cmd input{flex:1; min-width:0; border:0; background:none; font:13.5px var(--font-ui); color:var(--ink); outline:none; padding:4px 6px}
+#cmd .btn.primary{flex:none}
+#cmdstatus{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(72px + env(safe-area-inset-bottom,0px)); background:var(--ink); color:var(--bg); font-size:12px; padding:7px 14px; border-radius:99px; opacity:0; transition:opacity .25s; max-width:86%; text-align:center}
+#cmdstatus.show{opacity:1}
+
+/* ---------- record drawer ---------- */
+#drawer{position:fixed; top:0; right:0; bottom:0; width:min(380px,92vw); background:var(--surface); border-left:1px solid var(--line); box-shadow:-12px 0 32px rgba(10,15,30,.12); padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 16px 18px; overflow-y:auto; z-index:20}
+#drawer h2{margin:0 0 2px; font-size:17px}
+#drawer .sub{color:var(--ink-2); font-size:12.5px; margin-bottom:14px}
+#drawer .close{position:absolute; top:calc(12px + env(safe-area-inset-top,0px)); right:max(12px,env(safe-area-inset-right,0px))}
+.field{display:flex; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); font-size:13px}
+.field .fl{width:110px; flex:none; color:var(--ink-2)}
+.tl{margin-top:16px}
+.tl .ev{display:flex; gap:10px; padding:6px 0; font-size:12.5px}
+.tl .ev .t{color:var(--ink-2); width:52px; flex:none; font-variant-numeric:tabular-nums}
+
+@media (max-width:860px){ #inspector{display:none} }
+@media (max-width:640px){
+  #app{flex-direction:column}
+  #side{width:100%; flex-direction:row; border-right:0; border-bottom:1px solid var(--line); padding:8px 0; overflow-x:auto; align-items:center}
+  #ws{padding:0 8px 0 0} #ws small,.navhead{display:none}
+  .navitem{width:auto; white-space:nowrap}
+  table{min-width:560px}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Fragment+Mono&display=swap">
+</head>
+<body>
+
+<div id="app">
+  <nav id="side">
+    <div id="ws"><div class="dot">D</div><div><b>Datarisk</b><small>CRM generativo · protótipo</small></div></div>
+    <div class="navhead">Telas base</div>
+    <div id="nav-base"></div>
+    <div class="navhead">Telas geradas pela IA</div>
+    <div id="nav-gen"><div style="padding:4px 8px;font-size:12px;color:var(--ink-2)" id="gen-empty">Nenhuma ainda — peça uma na barra abaixo.</div></div>
+  </nav>
+
+  <main id="main">
+    <div id="topbar">
+      <h1 id="vtitle">—</h1>
+      <span class="vtype" id="vtypebadge"></span>
+      <span class="vgen" id="vgenbadge" hidden>gerada pela IA</span>
+      <div class="spacer"></div>
+      <button class="btn" id="btn-optimize" title="Reordena as colunas pelo que você mais usa">✦ Aplicar aprendizado</button>
+    </div>
+    <div id="canvas"></div>
+  </main>
+
+  <aside id="inspector">
+    <div>
+      <h3>Spec da tela <span style="color:var(--gen)">· JSON</span></h3>
+      <p style="font-size:12px;color:var(--ink-2);margin:6px 0 8px">A IA não escreve HTML — ela compõe esta definição, renderizada por componentes fixos.</p>
+      <pre id="spec"></pre>
+    </div>
+    <div>
+      <h3>Aprendizado de uso</h3>
+      <p style="font-size:12px;color:var(--ink-2);margin:6px 0 8px">Cada clique em célula ou coluna vira sinal. Campos mais usados sobem.</p>
+      <div id="learnbars"></div>
+      <div id="learnhint" style="margin-top:10px">Interaja com a tabela e veja os sinais acumularem.</div>
+    </div>
+  </aside>
+</div>
+
+<div id="cmdbar">
+  <div id="cmd">
+    <input id="cmdinput" placeholder='Descreva uma tela… ex.: "kanban de negócios por responsável"' aria-label="Descreva uma tela">
+    <button class="btn primary" id="cmdgo">Gerar tela</button>
+  </div>
+</div>
+<div id="cmdstatus" role="status"></div>
+
+<script>
+/* ================= 1. SCHEMA DINÂMICO ================= */
+const schema = {
+  companies: { label:'Empresas', icon:'▦', fields:[
+    {id:'name',label:'Empresa',type:'text'},{id:'setor',label:'Setor',type:'select'},
+    {id:'porte',label:'Porte',type:'select'},{id:'status',label:'Status',type:'status'},
+    {id:'owner',label:'Responsável',type:'user'},{id:'site',label:'Site',type:'text'} ]},
+  people: { label:'Contatos', icon:'◉', fields:[
+    {id:'name',label:'Nome',type:'text'},{id:'cargo',label:'Cargo',type:'text'},
+    {id:'empresa',label:'Empresa',type:'ref'},{id:'email',label:'E-mail',type:'text'},
+    {id:'owner',label:'Responsável',type:'user'} ]},
+  deals: { label:'Negócios', icon:'◆', fields:[
+    {id:'name',label:'Negócio',type:'text'},{id:'empresa',label:'Empresa',type:'ref'},
+    {id:'valor',label:'Valor (R$)',type:'money'},{id:'estagio',label:'Estágio',type:'stage'},
+    {id:'prob',label:'Prob.',type:'percent'},{id:'owner',label:'Responsável',type:'user'},
+    {id:'proximo',label:'Próximo passo',type:'text'} ]}
+};
+const STAGES = ['Lead','Qualificado','Proposta','Negociação','Fechado'];
+
+const db = {
+  companies: [
+    {id:1,name:'Banco Meridiano',setor:'Bancos',porte:'Grande',status:'Cliente',owner:'Jhonata',site:'meridiano.com.br'},
+    {id:2,name:'CredVale',setor:'Crédito',porte:'Médio',status:'Negociação',owner:'Marina',site:'credvale.com.br'},
+    {id:3,name:'Seguros Atlas',setor:'Seguros',porte:'Grande',status:'Prospecção',owner:'Jhonata',site:'atlasseg.com.br'},
+    {id:4,name:'PagueJá',setor:'Pagamentos',porte:'Startup',status:'Cliente',owner:'Rafael',site:'pagueja.io'},
+    {id:5,name:'Coop Horizonte',setor:'Cooperativas',porte:'Médio',status:'Negociação',owner:'Marina',site:'coophorizonte.coop.br'},
+    {id:6,name:'FinMax Capital',setor:'Crédito',porte:'Médio',status:'Prospecção',owner:'Rafael',site:'finmax.com.br'}
+  ],
+  people: [
+    {id:1,name:'Carla Nogueira',cargo:'Head de Risco',empresa:'Banco Meridiano',email:'carla@meridiano.com.br',owner:'Jhonata'},
+    {id:2,name:'Eduardo Lima',cargo:'CTO',empresa:'PagueJá',email:'edu@pagueja.io',owner:'Rafael'},
+    {id:3,name:'Fernanda Souza',cargo:'Gerente de Crédito',empresa:'CredVale',email:'fernanda@credvale.com.br',owner:'Marina'},
+    {id:4,name:'Paulo Teixeira',cargo:'Diretor Comercial',empresa:'Seguros Atlas',email:'paulo@atlasseg.com.br',owner:'Jhonata'},
+    {id:5,name:'Luiza Prado',cargo:'Analista de Dados',empresa:'Coop Horizonte',email:'luiza@coophorizonte.coop.br',owner:'Marina'}
+  ],
+  deals: [
+    {id:1,name:'Score de crédito PJ',empresa:'Banco Meridiano',valor:420000,estagio:'Negociação',prob:70,owner:'Jhonata',proximo:'Revisar SLA com jurídico'},
+    {id:2,name:'Antifraude onboarding',empresa:'PagueJá',valor:180000,estagio:'Fechado',prob:100,owner:'Rafael',proximo:'Kickoff 10/11'},
+    {id:3,name:'Modelo de churn',empresa:'CredVale',valor:95000,estagio:'Proposta',prob:50,owner:'Marina',proximo:'Enviar proposta revisada'},
+    {id:4,name:'Precificação dinâmica',empresa:'Seguros Atlas',valor:310000,estagio:'Qualificado',prob:30,owner:'Jhonata',proximo:'Demo técnica quinta'},
+    {id:5,name:'Esteira de cobrança',empresa:'Coop Horizonte',valor:140000,estagio:'Proposta',prob:55,owner:'Marina',proximo:'Alinhar escopo de dados'},
+    {id:6,name:'Limite pré-aprovado',empresa:'FinMax Capital',valor:220000,estagio:'Lead',prob:15,owner:'Rafael',proximo:'Primeira call de descoberta'},
+    {id:7,name:'Monitoramento de modelos',empresa:'Banco Meridiano',valor:160000,estagio:'Qualificado',prob:40,owner:'Jhonata',proximo:'Mapear stakeholders'}
+  ]
+};
+
+/* ================= 2. VIEWS = DADOS, NÃO CÓDIGO ================= */
+let views = [
+  {id:'v-emp', title:'Empresas', object:'companies', type:'table', columns:['name','setor','porte','status','owner'], generated:false},
+  {id:'v-pipe', title:'Pipeline', object:'deals', type:'kanban', groupBy:'estagio', card:['name','empresa','valor'], generated:false},
+  {id:'v-ctt', title:'Contatos', object:'people', type:'table', columns:['name','cargo','empresa','email','owner'], generated:false}
+];
+let activeView = views[0];
+
+/* ================= 3. APRENDIZADO (telemetria de uso) ================= */
+let usage = {};
+try { usage = JSON.parse(localStorage.getItem('crm-usage')||'{}'); } catch(e){ usage = {}; }
+function track(obj, field){
+  const k = obj+'.'+field;
+  usage[k] = (usage[k]||0)+1;
+  try { localStorage.setItem('crm-usage', JSON.stringify(usage)); } catch(e){}
+  renderLearning();
+}
+function usageFor(obj){
+  return Object.entries(usage).filter(([k])=>k.startsWith(obj+'.'))
+    .map(([k,v])=>({field:k.split('.')[1],n:v})).sort((a,b)=>b.n-a.n);
+}
+
+/* ================= 4. RENDERIZADORES (componentes fixos) ================= */
+const canvas = document.getElementById('canvas');
+const fmtBRL = n => n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+function cellValue(f,row){
+  const v = row[f.id];
+  if(v==null) return '—';
+  if(f.type==='money') return fmtBRL(v);
+  if(f.type==='percent') return v+'%';
+  if(f.type==='status'){ const cls=v==='Cliente'?'g':(v==='Negociação'?'w':'a'); return `<span class="pill ${cls}">${v}</span>`; }
+  if(f.type==='stage'){ const cls=v==='Fechado'?'g':(v==='Negociação'?'w':'a'); return `<span class="pill ${cls}">${v}</span>`; }
+  if(f.type==='user') return `<span class="pill">${v}</span>`;
+  return String(v);
+}
+function renderTable(v){
+  const fields = v.columns.map(id=>schema[v.object].fields.find(f=>f.id===id)).filter(Boolean);
+  let rows = [...db[v.object]];
+  if(v.filter) rows = rows.filter(v.filter.fn);
+  if(v.sort){ const {field,dir}=v.sort; rows.sort((a,b)=>(a[field]>b[field]?1:-1)*(dir==='desc'?-1:1)); }
+  const u = Object.fromEntries(usageFor(v.object).map(x=>[x.field,x.n]));
+  const html = `<div class="tablewrap"><table><thead><tr>${
+    fields.map(f=>`<th data-f="${f.id}">${f.label}${u[f.id]?`<span class="heat">✦${u[f.id]}</span>`:''}</th>`).join('')
+  }</tr></thead><tbody>${
+    rows.map(r=>`<tr data-id="${r.id}">${fields.map(f=>`<td data-f="${f.id}">${cellValue(f,r)}</td>`).join('')}</tr>`).join('')
+  }</tbody></table></div>
+  ${v.filter?`<p style="font-size:12px;color:var(--ink-2);margin:8px 2px 0">Filtro ativo: ${v.filter.label} · ${rows.length} registro(s)</p>`:''}`;
+  canvas.innerHTML = html;
+  canvas.querySelectorAll('th').forEach(th=>th.addEventListener('click',()=>{
+    track(v.object, th.dataset.f);
+    v.sort = {field:th.dataset.f, dir: v.sort&&v.sort.field===th.dataset.f&&v.sort.dir==='asc'?'desc':'asc'};
+    renderActive();
+  }));
+  canvas.querySelectorAll('td').forEach(td=>td.addEventListener('click',e=>{
+    track(v.object, td.dataset.f);
+    openDrawer(v.object, +td.parentElement.dataset.id);
+  }));
+}
+function renderKanban(v){
+  const groups = v.groupBy==='estagio' ? STAGES : [...new Set(db[v.object].map(r=>r[v.groupBy]))];
+  let rows = [...db[v.object]];
+  if(v.filter) rows = rows.filter(v.filter.fn);
+  canvas.innerHTML = `<div class="kanban">${groups.map(g=>{
+    const items = rows.filter(r=>r[v.groupBy]===g);
+    const total = items.reduce((s,r)=>s+(r.valor||0),0);
+    return `<div class="kcol"><h4><span>${g}</span><span>${items.length}${total?` · ${fmtBRL(total)}`:''}</span></h4>${
+      items.map(r=>`<div class="kcard" data-id="${r.id}">
+        <b>${r.name}</b><small>${r.empresa||r.cargo||''} · ${r.owner}</small>
+        ${r.valor?`<div class="val">${fmtBRL(r.valor)}</div>`:''}</div>`).join('')
+    }</div>`;
+  }).join('')}</div>`;
+  canvas.querySelectorAll('.kcard').forEach(c=>c.addEventListener('click',()=>{
+    track(v.object, v.groupBy);
+    openDrawer(v.object, +c.dataset.id);
+  }));
+}
+function renderActive(){
+  const v = activeView;
+  document.getElementById('vtitle').textContent = v.title;
+  document.getElementById('vtypebadge').textContent = v.type==='kanban'?'kanban':'tabela';
+  document.getElementById('vgenbadge').hidden = !v.generated;
+  v.type==='kanban' ? renderKanban(v) : renderTable(v);
+  renderSpec(v); renderNav(); renderLearning();
+}
+
+/* ================= 5. GERADOR DE TELAS (a parte "IA") =================
+   Protótipo: parser de linguagem natural por regras. No produto real,
+   este é o ponto onde entra um LLM devolvendo o MESMO formato de spec. */
+function generateView(prompt){
+  const p = prompt.toLowerCase();
+  const spec = { id:'v-gen-'+Date.now(), generated:true };
+  spec.object = /neg[óo]cio|deal|pipeline|oportunidad|venda/.test(p) ? 'deals'
+    : /contato|pessoa|lead(?!s? de)/.test(p) ? 'people' : /empresa|conta|cliente/.test(p) ? 'deals'===''?'':'companies' : 'deals';
+  spec.type = /kanban|quadro|pipeline|board/.test(p) ? 'kanban' : 'table';
+  if(spec.type==='kanban'){
+    spec.groupBy = /respons[áa]vel|analista|dono|vendedor/.test(p) ? 'owner'
+      : /setor/.test(p) && spec.object==='companies' ? 'setor' : spec.object==='deals' ? 'estagio' : 'owner';
+  } else {
+    const all = schema[spec.object].fields.map(f=>f.id);
+    const mentioned = schema[spec.object].fields.filter(f=>p.includes(f.label.toLowerCase().split(' ')[0]) && f.id!=='name').map(f=>f.id);
+    spec.columns = ['name', ...(mentioned.length?mentioned:all.slice(1,5))].slice(0,6);
+  }
+  const mVal = p.match(/acima de\s*(?:r\$\s*)?([\d.,]+)\s*(mil|k)?/);
+  if(mVal && spec.object==='deals'){
+    let n = parseFloat(mVal[1].replace(/\./g,'').replace(',','.'));
+    if(mVal[2]) n *= 1000;
+    spec.filter = {label:`valor ≥ ${fmtBRL(n)}`, fn:r=>r.valor>=n};
+  } else if(/abert/.test(p) && spec.object==='deals'){
+    spec.filter = {label:'estágio ≠ Fechado', fn:r=>r.estagio!=='Fechado'};
+  } else if(/fechad|ganho/.test(p) && spec.object==='deals'){
+    spec.filter = {label:'estágio = Fechado', fn:r=>r.estagio==='Fechado'};
+  }
+  if(/maior valor|mais valios|por valor/.test(p) && spec.type==='table') spec.sort={field:'valor',dir:'desc'};
+  if(spec.type==='kanban') spec.card=['name','empresa','valor'];
+  spec.title = prompt.length>42 ? prompt.slice(0,40)+'…' : prompt;
+  spec.title = spec.title.charAt(0).toUpperCase()+spec.title.slice(1);
+  return spec;
+}
+
+/* ================= 6. UI: nav, spec, aprendizado, drawer, comando ================= */
+function renderNav(){
+  const base = document.getElementById('nav-base'), gen = document.getElementById('nav-gen');
+  base.innerHTML='';
+  const genViews = views.filter(v=>v.generated);
+  gen.innerHTML = genViews.length? '' : '<div style="padding:4px 8px;font-size:12px;color:var(--ink-2)">Nenhuma ainda — peça uma na barra abaixo.</div>';
+  views.forEach(v=>{
+    const b = document.createElement('button');
+    b.className = 'navitem'+(v===activeView?' active':'');
+    b.innerHTML = `<span class="ic">${schema[v.object].icon}</span>${v.title}${v.generated?'<span class="tag">IA</span>':''}`;
+    b.addEventListener('click',()=>{activeView=v; renderActive();});
+    (v.generated?gen:base).appendChild(b);
+  });
+}
+function renderSpec(v){
+  const clean = {...v}; delete clean.generated;
+  if(clean.filter) clean.filter = clean.filter.label;
+  const json = JSON.stringify(clean,null,2)
+    .replace(/"([^"]+)":/g,'<span class="k">"$1"</span>:')
+    .replace(/: "([^"]*)"/g,': <span class="s">"$1"</span>')
+    .replace(/: (\d+)/g,': <span class="n">$1</span>');
+  document.getElementById('spec').innerHTML = json;
+}
+function renderLearning(){
+  const list = usageFor(activeView.object);
+  const el = document.getElementById('learnbars');
+  const hint = document.getElementById('learnhint');
+  if(!list.length){ el.innerHTML='<p style="font-size:12px;color:var(--ink-2)">Sem sinais ainda para este objeto.</p>'; hint.textContent='Interaja com a tabela e veja os sinais acumularem.'; return; }
+  const max = list[0].n;
+  el.innerHTML = list.slice(0,6).map(x=>{
+    const f = schema[activeView.object].fields.find(f=>f.id===x.field);
+    return `<div class="learnrow"><span class="fname">${f?f.label:x.field}</span><span class="bar" style="width:${Math.max(8,Math.round(x.n/max*120))}px"></span><span class="cnt">${x.n}</span></div>`;
+  }).join('');
+  const top = schema[activeView.object].fields.find(f=>f.id===list[0].field);
+  hint.innerHTML = `Você interage mais com <b>${top?top.label:list[0].field}</b>. "Aplicar aprendizado" reordena a tela por esse sinal.`;
+}
+document.getElementById('btn-optimize').addEventListener('click',()=>{
+  const v = activeView;
+  const ranked = usageFor(v.object).map(x=>x.field);
+  if(!ranked.length){ toast('Ainda não há sinais de uso — clique em algumas células primeiro.'); return; }
+  if(v.type==='table'){
+    v.columns.sort((a,b)=>{
+      const ia = ranked.indexOf(a), ib = ranked.indexOf(b);
+      return (ia===-1?99:ia)-(ib===-1?99:ib);
+    });
+    toast('Colunas reordenadas pelo seu uso. A spec mudou — veja no inspetor.');
+  } else {
+    toast('Em kanban, o aprendizado ajustaria o agrupamento — demo na tabela.');
+  }
+  renderActive();
+});
+
+/* drawer */
+function openDrawer(obj,id){
+  const r = db[obj].find(x=>x.id===id); if(!r) return;
+  closeDrawer();
+  const d = document.createElement('div'); d.id='drawer';
+  const fields = schema[obj].fields;
+  d.innerHTML = `<button class="btn close" aria-label="Fechar">✕</button>
+    <h2>${r.name}</h2><div class="sub">${schema[obj].label.slice(0,-1)} · responsável: ${r.owner}</div>
+    ${fields.filter(f=>f.id!=='name').map(f=>`<div class="field"><span class="fl">${f.label}</span><span>${cellValue(f,r)}</span></div>`).join('')}
+    <div class="tl"><h3 style="font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2)">Linha do tempo (exemplo)</h3>
+      <div class="ev"><span class="t">ontem</span><span>E-mail de follow-up enviado</span></div>
+      <div class="ev"><span class="t">seg</span><span>Reunião de alinhamento (45 min)</span></div>
+      <div class="ev"><span class="t">20/10</span><span>Registro criado via importação</span></div>
+    </div>`;
+  document.body.appendChild(d);
+  d.querySelector('.close').addEventListener('click',closeDrawer);
+}
+function closeDrawer(){ const d=document.getElementById('drawer'); if(d) d.remove(); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDrawer(); });
+
+/* comando */
+function toast(msg){
+  const s = document.getElementById('cmdstatus');
+  s.textContent = msg; s.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>s.classList.remove('show'), 3400);
+}
+function runCmd(){
+  const inp = document.getElementById('cmdinput');
+  const q = inp.value.trim(); if(!q) return;
+  const spec = generateView(q);
+  views.push(spec); activeView = spec; inp.value='';
+  renderActive();
+  toast(`Tela gerada: ${spec.type==='kanban'?'kanban':'tabela'} de ${schema[spec.object].label.toLowerCase()}${spec.groupBy?' por '+spec.groupBy:''}.`);
+}
+document.getElementById('cmdgo').addEventListener('click',runCmd);
+document.getElementById('cmdinput').addEventListener('keydown',e=>{ if(e.key==='Enter') runCmd(); });
+
+renderActive();
+</script>
+
+</body>
+</html>
