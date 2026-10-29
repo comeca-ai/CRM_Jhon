@@ -8,6 +8,7 @@ import { track, ranking, suggestion } from './core/learning.js';
 import { createRecord, updateField, addNote, relativeTime } from './core/records.js';
 import { extractPageInfo, suggestFromPage, captureNote } from './core/capture.js';
 import { validateState } from './core/validate-state.js';
+import { DEFAULT_ORIGIN, PlatformError, normalizeOrigin, originPattern, buildCapturePayload, sendCapture, checkConnection, fetchSnapshot, todaySummary } from './core/platform.js';
 
 const surface = new URLSearchParams(location.search).get('surface') || 'panel';
 let S; // estado: schema, records, views, usage, settings
@@ -378,8 +379,9 @@ function openNew(obj, values = {}, opts = {}) {
           (noteEl = h('textarea', { id: 'capture-note', 'aria-label': 'Nota da captura', maxlength: '2000', value: noteText, oninput: (e) => { noteText = e.target.value; } }))],
         h('p', { class: 'err', id: 'new-err', role: 'alert' }),
         h('div', { class: 'row end' }, h('button', { class: 'btn', type: 'button', text: 'Cancelar', onclick: closeSheet }),
-          h('button', { class: 'btn primary', type: 'button', text: 'Salvar', onclick: async () => {
+          h('button', { class: 'btn primary', type: 'button', id: 'btn-save-new', text: opts.capture && platformOn() ? 'Salvar e enviar ao Decida Antes' : 'Salvar', onclick: async (ev) => {
             try {
+              ev.currentTarget.disabled = true;
               const data = Object.fromEntries(Object.entries(vals).map(([k, el]) => [k, el.value]));
               const capNote = noteText.trim().slice(0, 2000);
               const event = opts.capture ? { kind: 'capture', text: capNote || 'Capturado de página' } : { kind: 'created', text: 'Registro criado manualmente' };
@@ -389,8 +391,10 @@ function openNew(obj, values = {}, opts = {}) {
               closeSheet();
               const view = S.views.find((v) => v.object === current && !v.filters?.length) || S.views.find((v) => v.object === current);
               if (view) setActive(view.id); else render();
-              toast(`${S.schema[current].singular} "${rec.name}" salvo.`, { label: 'Abrir', run: () => openRecord(current, rec.id) });
-            } catch (e) { $('#new-err').textContent = e.message; }
+              const saved = `${S.schema[current].singular} "${rec.name}" salvo.`;
+              if (opts.capture && platformOn()) await sendCaptureToPlatform(buildCapturePayload(opts.sug, current, data, capNote), saved);
+              else toast(saved, { label: 'Abrir', run: () => openRecord(current, rec.id) });
+            } catch (e) { const btn = $('#btn-save-new'); if (btn) btn.disabled = false; $('#new-err').textContent = e.message; }
           } })));
       vals.name?.setAttribute('autofocus', '');
     };
@@ -399,16 +403,19 @@ function openNew(obj, values = {}, opts = {}) {
 }
 
 // ---------- captura da página ativa ----------
-// Ordem: tenta ler a página com o acesso que já existe (activeTab ao abrir o painel pelo ícone, ou site já liberado).
-// Só se faltar acesso, pede a origem ao Chrome no próprio clique. O menu de contexto é o caminho sem acesso permanente.
+// Ordem: tenta ler a página com o acesso que já existe (activeTab ao abrir o painel pelo ícone, ou sites já liberados).
+// Sem acesso, o Chrome nem mostra ao painel o endereço da aba; por isso o pedido é de leitura dos sites em geral,
+// feito numa janela própria, no clique de confirmação. O menu de contexto é o caminho sem acesso permanente.
 const NO_ACCESS = /permission|Cannot access|cannot be scripted|must request permission/i;
+// Páginas que nenhuma permissão libera: não vale pedir acesso para elas.
+const UNREADABLE = /chrome:\/\/|chrome-extension:\/\/|chrome-search:\/\/|edge:\/\/|about:|file:\/\/|view-source:|devtools:|chromewebstore\.google\.com|chrome\.google\.com\/webstore|Cannot access a chrome/i;
 const ALL_SITES = ['https://*/*', 'http://*/*'];
 
 function openCaptureForm(raw, expectedOrigin) {
   const sug = suggestFromPage(raw);
   if (!sug.ok) return toast(sug.reason);
   if (expectedOrigin && !sug.info.url.startsWith(expectedOrigin)) return toast('A aba mudou de página durante a captura. Tente de novo.');
-  openNew(sug.object, sug.values, { title: 'Capturar página', sub: sug.host, capture: true, note: captureNote(sug.info) });
+  openNew(sug.object, sug.values, { title: 'Capturar página', sub: sug.host, capture: true, note: captureNote(sug.info), sug });
 }
 
 async function capture() {
@@ -423,10 +430,8 @@ async function capture() {
     try { [res] = await run(); }
     catch (e) {
       if (!NO_ACCESS.test(String(e?.message))) throw e;
-      // Sem "tabs", o painel não vê o endereço da aba; só dá para pedir acesso aos sites em geral.
-      const origins = tab.url ? [new URL(tab.url).origin + '/*'] : ALL_SITES;
-      if (await chrome.permissions.contains({ origins })) return toast('Esta página não permite leitura por extensões.');
-      return askSiteAccess(origins, tab.url ? new URL(tab.url).hostname : null);
+      if (UNREADABLE.test(String(e?.message)) || await chrome.permissions.contains({ origins: ALL_SITES })) return toast('Esta página não permite leitura por extensões.');
+      return askSiteAccess();
     }
     openCaptureForm(res?.result, tab.url ? new URL(tab.url).origin : null);
   } catch (e) {
@@ -435,18 +440,17 @@ async function capture() {
 }
 
 // Pede acesso num clique próprio do usuário: o Chrome só mostra o pedido de permissão durante um gesto.
-function askSiteAccess(origins, host) {
+function askSiteAccess() {
   openSheet('', (sheet, titleId) => {
     clear(sheet,
       sheetHeader('Permitir leitura de páginas', titleId),
-      h('p', { text: host
-        ? `Para capturar, o CRM precisa ler ${host}.`
-        : 'Para capturar, o CRM precisa ler os sites que você abrir. O Chrome vai pedir sua confirmação uma vez.' }),
-      h('p', { class: 'hint', text: 'A leitura só acontece quando você clica em Capturar: título, descrição, texto selecionado e e-mails da página. Nada sai do seu navegador. Você pode revogar em Configurações.' }),
+      h('p', { text: 'Para capturar, a extensão precisa ler os sites que você abrir. O Chrome vai pedir sua confirmação uma vez.' }),
+      h('p', { class: 'hint', text: 'A leitura só acontece quando você clica em Capturar: título, descrição, texto selecionado e e-mails da página. Você pode revogar em Configurações.' }),
       h('div', { class: 'row end' },
         h('button', { class: 'btn ghost', type: 'button', text: 'Agora não', onclick: closeSheet }),
-        h('button', { class: 'btn primary', type: 'button', id: 'btn-allow-sites', text: 'Permitir e capturar', onclick: () => {
-          chrome.permissions.request({ origins }).then((ok) => {
+        h('button', { class: 'btn primary', type: 'button', id: 'btn-allow-sites', text: 'Permitir e capturar', onclick: (ev) => {
+          ev.currentTarget.disabled = true; // um clique, um pedido
+          chrome.permissions.request({ origins: ALL_SITES }).then((ok) => {
             closeSheet();
             if (!ok) return toast('Sem permissão para ler páginas. Nada foi capturado.');
             toast('Acesso liberado. Você pode revogar em Configurações.');
@@ -455,6 +459,52 @@ function askSiteAccess(origins, host) {
         } })),
       h('p', { class: 'hint', text: 'Prefere não liberar? Clique com o botão direito na página e escolha "Capturar esta página no CRM". Assim o acesso vale só para aquela vez.' }));
   }, () => $('#btn-capture'));
+}
+
+// ---------- Decida Antes (plataforma) ----------
+const platformOn = () => Boolean(S.settings.platform?.enabled && normalizeOrigin(S.settings.platform?.origin));
+const platformOrigin = () => normalizeOrigin(S.settings.platform?.origin) || DEFAULT_ORIGIN;
+const openPlatform = (path = '/') => chrome.tabs?.create?.({ url: platformOrigin() + path });
+
+async function sendCaptureToPlatform(payload, savedMsg) {
+  try {
+    const r = await sendCapture(platformOrigin(), payload);
+    const where = r?.companyName ? ` para ${r.companyName}` : '';
+    if (r?.status === 'duplicate') return toast(`${savedMsg} Esta página já foi enviada hoje ao Decida Antes${where}.`, { label: 'Ver sinais', run: () => openPlatform('/sinais') });
+    if (r?.status === 'failed') return toast(`${savedMsg} O Decida Antes registrou a captura, mas não criou o sinal. Tente de novo mais tarde.`);
+    return toast(`${savedMsg} Sinal novo no Decida Antes${where}, para validar.`, { label: 'Ver sinais', run: () => openPlatform('/sinais') });
+  } catch (e) {
+    const msg = e instanceof PlatformError ? e.message : 'Falha ao enviar ao Decida Antes.';
+    toast(`${savedMsg} ${msg}`, e?.kind === 'login' ? { label: 'Entrar', run: () => openPlatform('/') } : undefined);
+  }
+}
+
+function openToday() {
+  openSheet('', (sheet, titleId) => {
+    const body = h('div', { id: 'today', 'aria-live': 'polite' }, h('p', { class: 'hint', text: 'Carregando o que pede decisão hoje…' }));
+    clear(sheet, sheetHeader('Para decidir hoje', titleId, platformOrigin().replace('https://', '')), body);
+    const list = (title, items, path, line) => [h('h3', { text: title }),
+      items.length ? h('ul', { class: 'fieldlist' }, items.map((x) => h('li', {}, h('span', { text: line(x) })))) : h('p', { class: 'hint', text: 'Nada aqui agora.' }),
+      h('div', { class: 'row end' }, h('button', { class: 'btn small ghost', type: 'button', text: 'Abrir no Decida Antes', onclick: () => openPlatform(path) }))];
+    fetchSnapshot(platformOrigin()).then((snap) => {
+      const t = todaySummary(snap);
+      clear(body,
+        h('p', { class: 'hint', text: t.workspace }),
+        h('div', { class: 'row' }, [['Sinais a validar', t.counts.toValidate], ['Ações vencidas', t.counts.overdue], ['Ações de hoje', t.counts.actionsToday], ['Oportunidades abertas', t.counts.openOpportunities]]
+          .map(([l, n]) => h('span', { class: 'badge', text: `${l}: ${n}` }))),
+        list('Sinais a validar', t.signals, '/sinais', (x) => `${x.company} · ${x.title} (${x.source}, confiança ${x.confidence})`),
+        list('Ações vencidas', t.overdue, '/acoes', (x) => `${x.company} · ${x.note}`),
+        list('Oportunidades por prioridade', t.opportunities, '/oportunidades', (x) => `${x.company} · ${x.title}${x.nextAction ? ` → ${x.nextAction}` : ''}`));
+    }, (e) => {
+      clear(body, h('p', { class: 'err', role: 'alert', text: e instanceof PlatformError ? e.message : 'Não foi possível carregar o Decida Antes.' }),
+        e?.kind === 'login' && h('div', { class: 'row end' }, h('button', { class: 'btn primary small', type: 'button', text: 'Entrar no Decida Antes', onclick: () => openPlatform('/') })));
+    });
+  }, () => $('#btn-today'));
+}
+
+function renderPlatformButton() {
+  const b = $('#btn-today');
+  if (b) b.hidden = !platformOn();
 }
 
 // Captura iniciada pelo menu de contexto (o service worker deixa o resultado em storage.session).
@@ -498,6 +548,32 @@ async function generate(prompt) {
 }
 
 // ---------- configurações ----------
+function platformBox(st, redraw) {
+  const pf = st.platform || { enabled: false, origin: DEFAULT_ORIGIN };
+  const originInp = h('input', { class: 'inp', id: 'platform-origin', value: pf.origin || DEFAULT_ORIGIN, maxlength: '120', 'aria-describedby': 'platform-hint', disabled: pf.enabled });
+  const status = h('p', { class: 'hint', id: 'platform-status', role: 'status' });
+  return h('div', { class: 'box' },
+    h('label', { class: 'row' }, h('input', { type: 'checkbox', id: 'platform-on', checked: pf.enabled, onchange: async (e) => {
+      if (e.target.checked) {
+        const origin = normalizeOrigin(originInp.value);
+        if (!origin) { e.target.checked = false; status.textContent = 'Use um endereço https em decidaantes.com.br.'; return; }
+        // primeiro passo do gesto: o pedido de permissão do domínio da plataforma
+        const ok = await chrome.permissions.request({ origins: [originPattern(origin)] }).catch(() => false);
+        if (!ok) { e.target.checked = false; status.textContent = 'Sem permissão para falar com o Decida Antes. Nada mudou.'; return; }
+        st.platform = { enabled: true, origin };
+      } else st.platform = { ...pf, enabled: false };
+      await save('settings', st); renderPlatformButton(); redraw();
+    } }), h('span', { text: 'Enviar capturas ao Decida Antes' })),
+    h('label', { for: 'platform-origin', class: 'hint', text: 'Endereço do workspace' }), originInp,
+    h('p', { class: 'hint', id: 'platform-hint', text: 'Usa o login do Cloudflare Access que você já fez neste Chrome. Cada captura vira um sinal novo com evidência, para validar no Decida Antes. O registro local continua sendo salvo.' }),
+    pf.enabled && h('div', { class: 'row end' }, h('button', { class: 'btn small', type: 'button', id: 'platform-test', text: 'Testar conexão', onclick: async () => {
+      status.textContent = 'Testando…';
+      try { await checkConnection(pf.origin); status.textContent = 'Conectado ao Decida Antes.'; }
+      catch (e) { status.textContent = e instanceof PlatformError ? e.message : 'Falha ao testar a conexão.'; }
+    } })),
+    status);
+}
+
 function openSettings() {
   openSheet('', (sheet, titleId) => {
     const draw = () => {
@@ -564,12 +640,14 @@ function openSettings() {
       } });
       const sitesBox = h('ul', { class: 'fieldlist', id: 'sites' });
       chrome.permissions.getAll().then(({ origins = [] }) => {
-        const list = origins.filter((o) => !o.includes('*://*'));
+        // https e http amplos foram pedidos juntos: aparecem e são revogados juntos.
+        const broad = origins.filter((o) => ALL_SITES.includes(o));
+        const list = [...(broad.length ? [broad] : []), ...origins.filter((o) => !o.includes('*://*') && !ALL_SITES.includes(o)).map((o) => [o])];
         if (!list.length) return clear(sitesBox, h('li', { class: 'hint', text: 'Nenhum site liberado. A captura pelo menu de contexto não deixa acesso permanente.' }));
-        const label = (o) => ({ 'https://*/*': 'Todos os sites (https)', 'http://*/*': 'Todos os sites (http)' })[o] || o.replace(/\/\*$/, '');
-        clear(sitesBox, list.map((o) => h('li', {}, h('span', { text: label(o) }),
-          h('button', { class: 'btn small ghost', type: 'button', 'aria-label': `Revogar acesso a ${label(o)}`, text: 'Revogar', onclick: async () => {
-            const ok = await chrome.permissions.remove({ origins: [o] }).catch(() => false);
+        const label = (group) => (ALL_SITES.includes(group[0]) ? 'Todos os sites' : group[0].replace(/\/\*$/, ''));
+        clear(sitesBox, list.map((group) => h('li', {}, h('span', { text: label(group) }),
+          h('button', { class: 'btn small ghost', type: 'button', 'aria-label': `Revogar acesso a ${label(group)}`, text: 'Revogar', onclick: async () => {
+            const ok = await chrome.permissions.remove({ origins: group }).catch(() => false);
             toast(ok ? 'Acesso revogado.' : 'Não foi possível revogar (permissão obrigatória do pacote).');
             draw();
           } }))));
@@ -593,6 +671,7 @@ function openSettings() {
             st.apiKey = key.value.trim(); st.model = model.value.trim() || DEFAULT_MODEL; await save('settings', st); toast('Configuração do Claude salva.');
           } }))),
         h('p', { class: 'hint', text: 'Qualquer que seja o gerador, a tela nasce como spec JSON e passa pelo validador antes de aparecer.' }),
+        h('h3', { text: 'Decida Antes' }), platformBox(st, draw),
         h('h3', { text: 'Schema (objetos e campos)' }), schemaBox,
         h('h3', { text: 'Sites com acesso' }), sitesBox,
         h('h3', { text: 'Dados' }),
@@ -637,6 +716,8 @@ async function init() {
   $('#btn-capture').addEventListener('click', capture);
   $('#btn-new').addEventListener('click', () => openNew(activeView()?.object || 'companies'));
   $('#btn-settings').addEventListener('click', openSettings);
+  $('#btn-today').addEventListener('click', openToday);
+  renderPlatformButton();
   $('#insp-toggle').addEventListener('click', (e) => {
     const open = e.currentTarget.getAttribute('aria-expanded') !== 'true';
     e.currentTarget.setAttribute('aria-expanded', String(open));

@@ -23,7 +23,7 @@ const server = http.createServer((req, res) => { res.writeHead(200, { 'content-t
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const site = `http://127.0.0.1:${server.address().port}/sobre`;
 
-const { context, sw, url } = await launchWithExtension({ extensionDir: process.env.EXT_DIR || 'extension', extraHosts: ['http://127.0.0.1/*', 'https://api.anthropic.com/*'] });
+const { context, sw, url } = await launchWithExtension({ extensionDir: process.env.EXT_DIR || 'extension', extraHosts: ['http://127.0.0.1/*', 'https://api.anthropic.com/*', 'https://decidaantes.com.br/*'] });
 const browserVersion = context.browser()?.version() || (await sw.evaluate(() => navigator.userAgent));
 
 // API da Anthropic simulada: devolve uma spec no formato de saída estruturada.
@@ -41,7 +41,7 @@ await context.route('https://api.anthropic.com/**', async (route) => {
 const panel = await context.newPage();
 panel.on('pageerror', (e) => errors.push('panel: ' + e.message));
 // o 401 da API simulada é provocado de propósito no teste de queda para regras
-panel.on('console', (m) => { if (m.type() === 'error' && !(m.location()?.url || '').startsWith('https://api.anthropic.com/')) errors.push('panel console: ' + m.text()); });
+panel.on('console', (m) => { if (m.type() === 'error' && !/^https:\/\/(api\.anthropic\.com|decidaantes\.com\.br)\//.test(m.location()?.url || '')) errors.push('panel console: ' + m.text()); });
 await panel.setViewportSize({ width: 400, height: 760 });
 globalThis.__panel = panel;
 await panel.goto(url('?surface=panel'));
@@ -116,29 +116,43 @@ await step('captura sem acesso: explica, pede permissão num clique próprio e c
   await site_.goto(site);
   await panel.evaluate(() => {
     const real = { exec: chrome.scripting.executeScript, query: chrome.tabs.query, req: chrome.permissions.request };
-    window.__restore = () => Object.assign(chrome.scripting, { executeScript: real.exec }) && Object.assign(chrome.tabs, { query: real.query }) && Object.assign(chrome.permissions, { request: real.req });
+    window.__restore = () => { chrome.scripting.executeScript = real.exec; chrome.tabs.query = real.query; chrome.permissions.request = real.req; };
     window.__permCalls = [];
-    let blocked = true;
-    chrome.tabs.query = async (q) => (await real.query.call(chrome.tabs, q)).map((t) => (blocked ? { id: t.id, active: t.active } : t));
-    chrome.scripting.executeScript = (a) => blocked ? Promise.reject(new Error('Cannot access contents of the page. Extension manifest must request permission to access the respective host.')) : real.exec.call(chrome.scripting, a);
-    chrome.permissions.request = (p) => { window.__permCalls.push({ origins: p.origins, gesture: navigator.userActivation.isActive }); blocked = false; return Promise.resolve(true); };
+    window.__block = 'site'; // 'internal' simula chrome://newtab; 'site' simula um site comum sem permissão
+    chrome.tabs.query = async (q) => (await real.query.call(chrome.tabs, q)).map((t) => (window.__block ? { id: t.id, active: t.active } : t));
+    chrome.scripting.executeScript = (a) => {
+      if (window.__block === 'internal') return Promise.reject(new Error('Cannot access contents of url "chrome://newtab/". Extension manifest must request permission to access this host.'));
+      if (window.__block === 'site') return Promise.reject(new Error('Cannot access contents of the page. Extension manifest must request permission to access the respective host.'));
+      return real.exec.call(chrome.scripting, a);
+    };
+    chrome.permissions.request = (p) => { window.__permCalls.push({ origins: p.origins, gesture: navigator.userActivation.isActive }); window.__block = null; return Promise.resolve(true); };
   });
-  await panel.evaluate(async () => { const [t] = await chrome.tabs.query({ url: 'http://127.0.0.1/*' }); await chrome.tabs.update(t.id, { active: true }); });
-  await panel.click('#btn-capture');
-  await panel.waitForSelector('#btn-allow-sites');
-  assert(await panel.evaluate(() => window.__permCalls.length) === 0, 'pediu permissão antes do clique de confirmação');
-  await shot(panel, '14-painel-pedido-acesso');
-  await panel.click('#btn-allow-sites');
-  await panel.waitForSelector('#f-name');
-  const calls = await panel.evaluate(() => window.__permCalls);
-  assert(calls.length === 1 && calls[0].gesture, 'pedido de permissão fora do gesto do usuário');
-  assert(JSON.stringify(calls[0].origins) === JSON.stringify(['https://*/*', 'http://*/*']), 'origens pedidas: ' + JSON.stringify(calls[0].origins));
-  assert(await panel.inputValue('#f-name') === 'Nuvem Crédito', 'formulário sem a página capturada');
-  await panel.keyboard.press('Escape');
-  await panel.waitForSelector('.sheet', { state: 'detached' });
-  await panel.evaluate(() => window.__restore());
-  await site_.close();
-  return { origins: calls[0].origins };
+  try {
+    await panel.evaluate(async () => { const [t] = await chrome.tabs.query({ url: 'http://127.0.0.1/*' }); await chrome.tabs.update(t.id, { active: true }); });
+    // página interna: nenhuma permissão adianta, então não se pede acesso a todos os sites
+    await panel.evaluate(() => { window.__block = 'internal'; });
+    await panel.click('#btn-capture');
+    await panel.waitForFunction(() => document.querySelector('#toast').textContent.includes('não permite leitura'));
+    assert(await panel.locator('#btn-allow-sites').count() === 0, 'pediu acesso para página interna');
+    // site comum sem permissão: janela explicativa e pedido só no clique de confirmação
+    await panel.evaluate(() => { window.__block = 'site'; });
+    await panel.click('#btn-capture');
+    await panel.waitForSelector('#btn-allow-sites');
+    assert(await panel.evaluate(() => window.__permCalls.length) === 0, 'pediu permissão antes do clique de confirmação');
+    await shot(panel, '14-painel-pedido-acesso');
+    await panel.dblclick('#btn-allow-sites');
+    await panel.waitForSelector('#f-name');
+    const calls = await panel.evaluate(() => window.__permCalls);
+    assert(calls.length === 1 && calls[0].gesture, 'pedidos de permissão: ' + JSON.stringify(calls));
+    assert(JSON.stringify(calls[0].origins) === JSON.stringify(['https://*/*', 'http://*/*']), 'origens pedidas: ' + JSON.stringify(calls[0].origins));
+    assert(await panel.inputValue('#f-name') === 'Nuvem Crédito', 'formulário sem a página capturada');
+    await panel.keyboard.press('Escape');
+    await panel.waitForSelector('.sheet', { state: 'detached' });
+    return { origins: calls[0].origins };
+  } finally {
+    await panel.evaluate(() => window.__restore?.());
+    await site_.close();
+  }
 });
 
 await step('registro: editar campo e adicionar nota entram na linha do tempo', async () => {
@@ -306,6 +320,78 @@ await step('aba cheia reflete o mesmo estado', async () => {
   assert(await full.locator('#nav-gen .navitem').count() >= 3, 'telas geradas ausentes');
   await full.screenshot({ path: `${SHOTS}/09-tela-cheia.png` });
   await full.close();
+});
+
+// Plataforma Decida Antes simulada no formato do tRPC (superjson). O login real do Cloudflare Access
+// só pode ser verificado no Chrome do usuário; aqui conferimos o contrato e os três desfechos.
+await step('Decida Antes: conecta, envia captura como sinal, trata duplicata e login expirado', async () => {
+  const sent = [];
+  let mode = 'ok';
+  await context.route('https://decidaantes.com.br/**', async (route) => {
+    const req = route.request();
+    const path = new URL(req.url()).pathname;
+    const ok = (data) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ result: { data: { json: data } } }) });
+    if (mode === 'login') return route.fulfill({ status: 302, headers: { location: 'https://jhonata-emerick.cloudflareaccess.com/cdn-cgi/access/login/decidaantes.com.br' } });
+    if (path.endsWith('/integrations.status')) return ok({ integrations: [] });
+    if (path.endsWith('/workspace.snapshot')) return ok({ organization: { name: 'Operação Campo' }, metrics: { toValidate: 2, overdueActions: 1, actionsToday: 0, openOpportunities: 1 },
+      signals: [{ id: 1, status: 'new', title: 'Captura: Nuvem Crédito', companyName: 'Nuvem Crédito', source: 'extensao-chrome', confidence: 35 }],
+      overdueActions: [{ id: 3, note: 'Ligar para o financeiro', companyName: 'Frota Sul' }], opportunities: [{ id: 4, stage: 'qualified', title: 'Reembolsa', companyName: 'Frota Sul', priorityScore: 80, nextAction: 'Demonstração' }] });
+    if (path.endsWith('/integrations.captureFromExtension')) {
+      const body = JSON.parse(req.postData() || '{}');
+      sent.push({ body, credentials: req.headers()['content-type'] });
+      return ok({ status: sent.length === 1 ? 'processed' : 'duplicate', companyId: 11, companyName: body.json.companyName, companyCreated: sent.length === 1, signalId: 501 });
+    }
+    return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
+  });
+  try {
+    await panel.click('#btn-settings');
+    await panel.click('#platform-on');
+    await panel.waitForSelector('#platform-test');
+    await panel.click('#platform-test');
+    await panel.waitForFunction(() => document.querySelector('#platform-status').textContent.includes('Conectado'));
+    const st = await panel.evaluate(async () => (await chrome.storage.local.get('crm.settings'))['crm.settings'].platform);
+    assert(st.enabled && st.origin === 'https://decidaantes.com.br', 'configuração: ' + JSON.stringify(st));
+    await shot(panel, '15-painel-decida-antes-config');
+    await panel.keyboard.press('Escape');
+    assert(await panel.isVisible('#btn-today'), 'botão Hoje não apareceu');
+
+    const site_ = await context.newPage();
+    await site_.goto(site);
+    const captureAndSave = async (name) => {
+      await panel.evaluate(async () => { const [t] = await chrome.tabs.query({ url: 'http://127.0.0.1/*' }); await chrome.tabs.update(t.id, { active: true }); });
+      await panel.click('#btn-capture');
+      await panel.waitForSelector('#btn-save-new');
+      await panel.fill('#f-name', name);
+      assert((await panel.textContent('#btn-save-new')).includes('enviar ao Decida Antes'), 'botão sem envio');
+      await panel.click('#btn-save-new');
+      await panel.waitForSelector('.sheet', { state: 'detached' });
+    };
+    await captureAndSave('Nuvem Crédito (plataforma)');
+    await panel.waitForFunction(() => document.querySelector('#toast').textContent.includes('Sinal novo no Decida Antes'));
+    const first = sent[0].body.json;
+    assert(first.companyName === 'Nuvem Crédito (plataforma)' && /^http:\/\/127\.0\.0\.1:\d+\/sobre$/.test(first.url), 'payload: ' + JSON.stringify(first));
+    assert(first.title && first.note && first.emails?.includes('comercial@nuvemcredito.example'), 'payload incompleto: ' + JSON.stringify(first));
+    await captureAndSave('Nuvem Crédito (de novo)');
+    await panel.waitForFunction(() => document.querySelector('#toast').textContent.includes('já foi enviada hoje'));
+    mode = 'login';
+    await captureAndSave('Nuvem Crédito (sem login)');
+    await panel.waitForFunction(() => document.querySelector('#toast').textContent.includes('Entre em decidaantes.com.br'));
+    assert(await panel.locator('#toast button', { hasText: 'Entrar' }).count() === 1, 'sem botão Entrar');
+    const local = await panel.evaluate(async () => (await chrome.storage.local.get('crm.records'))['crm.records'].companies.map((c) => c.name));
+    assert(local.includes('Nuvem Crédito (sem login)'), 'registro local não foi salvo quando a plataforma falhou');
+    await site_.close();
+
+    mode = 'ok';
+    await panel.click('#btn-today');
+    await panel.waitForFunction(() => document.querySelector('#today')?.textContent.includes('Ligar para o financeiro'));
+    const today = await panel.textContent('#today');
+    assert(today.includes('Sinais a validar: 2') && today.includes('Operação Campo') && today.includes('Demonstração'), 'resumo de hoje: ' + today);
+    await shot(panel, '16-painel-hoje-decida-antes');
+    await panel.keyboard.press('Escape');
+    return { sent: sent.length, firstPayloadKeys: Object.keys(first) };
+  } finally {
+    await context.unroute('https://decidaantes.com.br/**');
+  }
 });
 
 await step('acessibilidade (axe-core, WCAG 2.1 A/AA) no painel, registro e configurações', async () => {

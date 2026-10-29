@@ -64,4 +64,4 @@ export const SEED_VIEWS = [
   { id: 'v-ctt', title: 'Contatos', object: 'people', type: 'table', columns: ['name', 'cargo', 'empresa', 'email', 'owner'], generated: false }
 ];
 
-export const DEFAULT_SETTINGS = { generator: 'rules', model: 'claude-opus-5-5', apiKey: '', dismissed: {}, sampleData: true };
+export const DEFAULT_SETTINGS = { generator: 'rules', model: 'claude-opus-5-5', apiKey: '', dismissed: {}, sampleData: true, platform: { enabled: false, origin: 'https://decidaantes.com.br' } };

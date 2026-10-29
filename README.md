@@ -64,6 +64,7 @@ No protótipo o gerador é um parser por regras. No produto real, esse é exatam
 - [ ] Backend com schema dinâmico (Postgres + JSONB de atributos, ou EAV) e API de introspecção para o gerador
 - [x] Gerador de telas com LLM (Claude, opcional), com validação de spec contra o schema — na extensão
 - [x] Extensão do Chrome com captura da página ativa e painel lateral
+- [x] **Ligação com o Decida Antes**: captura salva vira sinal novo com evidência na plataforma (`integrations.captureFromExtension`), com o login do Cloudflare Access do próprio Chrome; botão **Hoje** mostra o que pede decisão. Ver `docs/EXTENSAO.md` no repositório `comeca-ai/decidaantes`
 - [x] Loop de aprendizado persistente: telemetria de uso → sugestões de layout → aceite do usuário (local, na extensão)
 - [ ] **Integração Granola (MCP)**: reuniões gravadas/transcritas no Granola viram eventos na timeline do registro (empresa/negócio) e alimentam campos como "próximo passo" automaticamente — cobre o caso "gravar reuniões" do Attio sem construir gravação própria
 - [ ] Sincronização de e-mail/calendário para enriquecimento automático de contatos

@@ -23,7 +23,7 @@ Monte as telas do seu CRM pedindo em português: "negócios abertos acima de 150
 | sidePanel | A interface do produto é o painel lateral. |
 | activeTab, scripting | Ler título, URL, descrição, seleção e e-mails mailto da aba ativa quando o usuário clica em "Capturar página". |
 | contextMenus | Item "Capturar esta página no CRM", que concede acesso só àquela aba, sem permissão permanente. |
-| Hosts opcionais (https://*/*, http://*/*) | O usuário captura sites de qualquer empresa; a permissão é pedida por site no clique, e para api.anthropic.com só ao ligar o gerador Claude. |
+| Hosts opcionais (https://*/*, http://*/*) | O usuário captura sites de qualquer empresa. Sem a permissão "tabs", o painel não vê o endereço da aba, por isso o acesso é pedido para os sites em geral, numa janela explicativa e só depois do clique de confirmação; nunca em páginas internas do Chrome. A leitura só acontece no clique em Capturar. Os mesmos hosts opcionais cobrem api.anthropic.com, pedido só ao ligar o gerador Claude, e o workspace Decida Antes (https://decidaantes.com.br), pedido só ao ligar o envio de capturas. |
 
 **Código remoto:** não. Todo o código está no pacote, incluindo o SDK da Anthropic empacotado.
 **Uso de dados (formulário), marcar:**
@@ -32,6 +32,7 @@ Monte as telas do seu CRM pedindo em português: "negócios abertos acima de 150
 - Atividade do usuário: contagem de cliques em colunas, células e cartões (sugestão de layout, local).
 - Histórico da web: endereços (sem parâmetros) das páginas que o usuário captura.
 - Conteúdo do site: título, descrição, seleção e e-mails mailto da página capturada.
+- Transferência: só para o workspace Decida Antes do próprio usuário, quando ele liga o envio de capturas.
 
 Tudo sob ação do usuário e armazenado localmente; o único envio externo é o pedido de tela e a estrutura do CRM para api.anthropic.com quando o usuário liga o gerador Claude. Não vendido, não usado para publicidade nem para fins alheios ao propósito único. Política: `PRIVACY.md`.
 

@@ -1,13 +1,13 @@
 # Relatório de testes
 
 Data: 2026-10-29. Navegador: Chromium 141.0.7390.37 (headless, perfil temporário).
-Artefato: `dist/crm-generativo-0.1.0.zip (extraído), sha256 69e5071b11b799100d78369b661aa308dc9e75dc582edb5187a0f94137011bc5`. Commit do código: `25b7dee`.
+Artefato: `dist/crm-generativo-0.1.0.zip (extraído), sha256 3fbc7f7f3f1c6800a09c3704922f2fcee348a8e244f0c731b4970d43269c0114`. Código: commit que adiciona a ligação com o Decida Antes.
 
 ## Resumo
 | Conjunto | Resultado |
 |---|---|
-| Unitários (`npm test`) | 23 de 23 passaram |
-| Ponta a ponta no Chromium (`npm run test:e2e`) | 21 de 21 passaram |
+| Unitários (`npm test`) | 31 de 31 passaram |
+| Ponta a ponta no Chromium (`npm run test:e2e`) | 22 de 22 passaram |
 | Acessibilidade (axe-core, WCAG 2.1 A/AA) | sem violações graves ou críticas no painel, registro e configurações |
 | Verificador do construtor | 1 erro falso positivo (regra sem distinção de maiúsculas casa `function(` no SDK empacotado; busca exata não acha `eval`, `new Function` nem import remoto) e 1 aviso de hosts amplos, que são opcionais e justificados |
 
@@ -40,6 +40,7 @@ Pacote: 117 KB compactado; o SDK (347 KB) só é baixado do próprio pacote quan
 | backup malicioso é recusado e o armazenamento fica intacto | passou |
 | estado corrompido mostra recuperação e restaura o exemplo | passou |
 | aba cheia reflete o mesmo estado | passou |
+| Decida Antes: conecta, envia captura como sinal, trata duplicata e login expirado | passou |
 | acessibilidade (axe-core, WCAG 2.1 A/AA) no painel, registro e configurações | passou |
 | tema escuro renderiza | passou |
 | desempenho: abertura do painel e geração de tela | passou |
@@ -51,5 +52,6 @@ Pacote: 117 KB compactado; o SDK (347 KB) só é baixado do próprio pacote quan
 - API da Anthropic simulada; nenhuma chamada real foi feita.
 - Sem permissão, o Chrome real não mostra ao painel o endereço da aba, e o botão Capturar abre uma janela que pede acesso aos sites. No e2e, essa falha de acesso e a resposta do diálogo do Chrome são simuladas. O diálogo real e o item do menu de contexto clicado por uma pessoa precisam de teste manual; o e2e chama a mesma função do menu pelo service worker.
 - Nenhuma chamada real à API da Anthropic foi feita.
+- A plataforma Decida Antes foi simulada no formato do tRPC. O login real do Cloudflare Access e a gravação do sinal no banco da plataforma só podem ser conferidos no Chrome do usuário autenticado. Do lado da plataforma, a procedure tem testes próprios no repositório `comeca-ai/decidaantes`.
 
-Capturas: `docs/screenshots/`. As de 01 a 11 e a 14 foram tiradas nesta execução; 12 e 13 vêm do teste da demo web.
+Capturas: `docs/screenshots/`. As de 01 a 11 e de 14 a 16 foram tiradas nesta execução; 12 e 13 vêm do teste da demo web.

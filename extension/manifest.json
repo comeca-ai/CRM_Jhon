@@ -37,7 +37,7 @@
     "http://*/*"
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.anthropic.com"
+    "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' https://api.anthropic.com https://decidaantes.com.br https://*.decidaantes.com.br"
   },
   "incognito": "not_allowed"
 }
