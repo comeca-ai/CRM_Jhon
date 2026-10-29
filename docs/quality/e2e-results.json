@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-29T09:27:34.932Z",
-  "artifact": "extension/",
+  "date": "2026-10-29T09:28:35.894Z",
+  "artifact": "dist/crm-generativo-0.1.0.zip (extraído), sha256 93bf01aad45209ab6d67e15105553a08d03d46fa6752ab4485e5bc4aaaf862a7",
   "browser": "141.0.7390.37",
   "passed": 20,
   "failed": 0,
@@ -8,7 +8,7 @@
     {
       "name": "service worker configura abrir painel ao clicar no ícone",
       "ok": true,
-      "ms": 25,
+      "ms": 19,
       "detail": {
         "enabled": true,
         "path": "src/app.html"
@@ -17,12 +17,12 @@
     {
       "name": "telas base com dados de exemplo",
       "ok": true,
-      "ms": 125
+      "ms": 111
     },
     {
       "name": "gera tela por linguagem natural (regras)",
       "ok": true,
-      "ms": 133,
+      "ms": 84,
       "detail": {
         "filters": [
           {
@@ -41,26 +41,26 @@
     {
       "name": "kanban: arrastar negócio muda o estágio e registra na linha do tempo",
       "ok": true,
-      "ms": 260
+      "ms": 165
     },
     {
       "name": "captura a página ativa como empresa (texto da página não vira HTML)",
       "ok": true,
-      "ms": 865,
+      "ms": 509,
       "detail": {
         "name": "Nuvem Crédito",
-        "note": "Capturado de http://127.0.0.1:45827/sobre — Plataforma de crédito para pequenas "
+        "note": "Capturado de http://127.0.0.1:37663/sobre — Plataforma de crédito para pequenas "
       }
     },
     {
       "name": "registro: editar campo e adicionar nota entram na linha do tempo",
       "ok": true,
-      "ms": 372
+      "ms": 385
     },
     {
       "name": "aprendizado: após cliques, sugere reordenar e só muda com aceite",
       "ok": true,
-      "ms": 505,
+      "ms": 502,
       "detail": {
         "after": [
           "Empresa",
@@ -74,17 +74,17 @@
     {
       "name": "schema dinâmico: novo campo aparece na tabela",
       "ok": true,
-      "ms": 280
+      "ms": 232
     },
     {
       "name": "exportar JSON nunca inclui a chave da API",
       "ok": true,
-      "ms": 365
+      "ms": 428
     },
     {
       "name": "gerador Claude: pedido estruturado, spec validada e campo inventado descartado",
       "ok": true,
-      "ms": 4586,
+      "ms": 4465,
       "detail": {
         "model": "claude-opus-5-5",
         "card": [
@@ -99,20 +99,20 @@
     {
       "name": "gerador Claude: falha da API cai para regras com aviso",
       "ok": true,
-      "ms": 119
+      "ms": 133
     },
     {
       "name": "menu de contexto: captura sem botão do painel abre o formulário",
       "ok": true,
-      "ms": 304,
+      "ms": 374,
       "detail": {
-        "note": "Capturado de http://127.0.0.1:45827/sobre — Plataforma de crédito para pequenas empresas c"
+        "note": "Capturado de http://127.0.0.1:37663/sobre — Plataforma de crédito para pequenas empresas c"
       }
     },
     {
       "name": "configurações listam os sites com acesso",
       "ok": true,
-      "ms": 137,
+      "ms": 198,
       "detail": [
         "http://127.0.0.1Revogar",
         "https://api.anthropic.comRevogar"
@@ -121,22 +121,22 @@
     {
       "name": "backup malicioso é recusado e o armazenamento fica intacto",
       "ok": true,
-      "ms": 844
+      "ms": 865
     },
     {
       "name": "estado corrompido mostra recuperação e restaura o exemplo",
       "ok": true,
-      "ms": 991
+      "ms": 1427
     },
     {
       "name": "aba cheia reflete o mesmo estado",
       "ok": true,
-      "ms": 503
+      "ms": 745
     },
     {
       "name": "acessibilidade (axe-core, WCAG 2.1 A/AA) no painel, registro e configurações",
       "ok": true,
-      "ms": 1292,
+      "ms": 1277,
       "detail": [
         {
           "label": "painel",
@@ -155,22 +155,22 @@
     {
       "name": "tema escuro renderiza",
       "ok": true,
-      "ms": 469
+      "ms": 394
     },
     {
       "name": "desempenho: abertura do painel e geração de tela",
       "ok": true,
-      "ms": 366,
+      "ms": 398,
       "detail": {
-        "panelOpenMs": 160,
-        "rulesGenerateMs": 64,
+        "panelOpenMs": 135,
+        "rulesGenerateMs": 87,
         "sdkLoadedWithRulesGenerator": false
       }
     },
     {
       "name": "sem erros de JavaScript nas páginas da extensão",
       "ok": true,
-      "ms": 2
+      "ms": 1
     }
   ],
   "limits": [
