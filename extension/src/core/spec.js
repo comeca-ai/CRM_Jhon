@@ -43,7 +43,10 @@ export function validateSpec(input, schema) {
       if (g != null) errors.push(`agrupamento inválido (${String(g)}), usado ${fallback.id}`);
       out.groupBy = fallback.id;
     } else out.groupBy = g;
-    const card = Array.isArray(input.card) ? input.card.filter(known) : [];
+    const rawCard = Array.isArray(input.card) ? input.card : [];
+    const badCard = rawCard.filter((c) => !known(c));
+    if (badCard.length) errors.push(`campos do cartão ignorados (não existem): ${badCard.join(', ')}`);
+    const card = rawCard.filter(known);
     out.card = card.length ? [...new Set(card)].slice(0, 4) : ['name', ...schema[obj].fields.filter((f) => f.id !== 'name' && f.id !== out.groupBy).slice(0, 2).map((f) => f.id)];
   }
 

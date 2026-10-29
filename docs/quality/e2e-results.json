@@ -1,0 +1,144 @@
+{
+  "date": "2026-10-29T09:13:13.729Z",
+  "browser": "141.0.7390.37",
+  "passed": 15,
+  "failed": 1,
+  "results": [
+    {
+      "name": "service worker configura abrir painel ao clicar no ícone",
+      "ok": true,
+      "ms": 27,
+      "detail": {
+        "enabled": true,
+        "path": "src/app.html?surface=panel"
+      }
+    },
+    {
+      "name": "telas base com dados de exemplo",
+      "ok": true,
+      "ms": 88
+    },
+    {
+      "name": "gera tela por linguagem natural (regras)",
+      "ok": true,
+      "ms": 93,
+      "detail": {
+        "filters": [
+          {
+            "field": "valor",
+            "op": ">=",
+            "value": 150000
+          },
+          {
+            "field": "estagio",
+            "op": "!=",
+            "value": "Fechado"
+          }
+        ]
+      }
+    },
+    {
+      "name": "kanban: arrastar negócio muda o estágio e registra na linha do tempo",
+      "ok": true,
+      "ms": 198
+    },
+    {
+      "name": "captura a página ativa como empresa (texto da página não vira HTML)",
+      "ok": true,
+      "ms": 468,
+      "detail": {
+        "name": "Nuvem Crédito",
+        "note": "Capturado de http://127.0.0.1:43607/sobre — Plataforma de crédito para pequenas "
+      }
+    },
+    {
+      "name": "registro: editar campo e adicionar nota entram na linha do tempo",
+      "ok": true,
+      "ms": 437
+    },
+    {
+      "name": "aprendizado: após cliques, sugere reordenar e só muda com aceite",
+      "ok": true,
+      "ms": 608,
+      "detail": {
+        "after": [
+          "Empresa",
+          "Responsável",
+          "Setor",
+          "Status",
+          "Porte"
+        ]
+      }
+    },
+    {
+      "name": "schema dinâmico: novo campo aparece na tabela",
+      "ok": true,
+      "ms": 269
+    },
+    {
+      "name": "exportar JSON nunca inclui a chave da API",
+      "ok": true,
+      "ms": 586
+    },
+    {
+      "name": "gerador Claude: pedido estruturado, spec validada e campo inventado descartado",
+      "ok": false,
+      "ms": 225,
+      "error": "aviso do validador não aparece no inspetor"
+    },
+    {
+      "name": "gerador Claude: falha da API cai para regras com aviso",
+      "ok": true,
+      "ms": 92
+    },
+    {
+      "name": "aba cheia reflete o mesmo estado",
+      "ok": true,
+      "ms": 496
+    },
+    {
+      "name": "acessibilidade (axe-core, WCAG 2.1 A/AA) no painel, registro e configurações",
+      "ok": true,
+      "ms": 1093,
+      "detail": [
+        {
+          "label": "painel",
+          "violations": []
+        },
+        {
+          "label": "registro",
+          "violations": []
+        },
+        {
+          "label": "configurações",
+          "violations": []
+        }
+      ]
+    },
+    {
+      "name": "tema escuro renderiza",
+      "ok": true,
+      "ms": 394
+    },
+    {
+      "name": "desempenho: abertura do painel e geração de tela",
+      "ok": true,
+      "ms": 347,
+      "detail": {
+        "panelOpenMs": 145,
+        "rulesGenerateMs": 50,
+        "sdkLoadedWithRulesGenerator": false
+      }
+    },
+    {
+      "name": "sem erros de JavaScript nas páginas da extensão",
+      "ok": true,
+      "ms": 0
+    }
+  ],
+  "limits": [
+    "Painel lateral exercitado como página da extensão a 400 px; o painel nativo do Chrome não é aberto por automação.",
+    "Origens http://127.0.0.1 e api.anthropic.com concedidas por manifesto de teste; o diálogo de permissão real não foi clicado.",
+    "API da Anthropic simulada; nenhuma chamada real foi feita."
+  ]
+}

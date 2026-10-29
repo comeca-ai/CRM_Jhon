@@ -12,6 +12,7 @@ const surface = new URLSearchParams(location.search).get('surface') || 'panel';
 let S; // estado: schema, records, views, usage, settings
 let activeId;
 let lastFocus = null;
+let returnFocus = null; // função que reencontra o elemento de origem se ele foi redesenhado
 
 const field = (obj, id) => S.schema[obj]?.fields.find((f) => f.id === id);
 const activeView = () => S.views.find((v) => v.id === activeId) || S.views[0];
@@ -64,13 +65,13 @@ function renderNav() {
       h('span', { class: 'ic', 'aria-hidden': 'true', text: S.schema[v.object]?.icon || '•' }),
       h('span', { class: 'lbl', text: v.title }), v.generated && h('span', { class: 'tag', text: 'IA' }));
     (v.generated ? gen : base).append(item);
-    const chip = h('span', { class: 'chip' + (v.generated ? '' : ' base'), role: 'button', tabindex: '0', 'aria-pressed': cur ? 'true' : 'false',
-      onclick: () => setActive(v.id), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setActive(v.id); } } },
-      v.generated && h('span', { class: 'tag', text: 'IA' }), h('span', { text: v.title }),
-      v.generated && h('button', { type: 'button', class: 'x', 'aria-label': `Remover tela ${v.title}`, text: '×', onclick: (e) => { e.stopPropagation(); removeView(v); } }));
+    const chip = h('span', { class: 'chip' + (v.generated ? '' : ' base') + (cur ? ' cur' : '') },
+      h('button', { type: 'button', class: 'sel', 'aria-pressed': cur ? 'true' : 'false', onclick: () => setActive(v.id) },
+        v.generated && h('span', { class: 'tag', text: 'IA' }), h('span', { text: v.title })),
+      v.generated && h('button', { type: 'button', class: 'x', 'aria-label': `Remover tela ${v.title}`, text: '×', onclick: () => removeView(v) }));
     chips.append(chip);
   }
-  chips.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  chips.querySelector('.chip.cur')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
 }
 
 // ---------- células ----------
@@ -254,9 +255,10 @@ function render() {
 }
 
 // ---------- diálogos (gaveta/folhas) ----------
-function openSheet(labelText, build) {
+function openSheet(labelText, build, refocus) {
   closeSheet();
   lastFocus = document.activeElement;
+  returnFocus = refocus || null;
   const titleId = 'sheet-title';
   const sheet = h('div', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': titleId });
   const scrim = h('div', { class: 'scrim', onclick: (e) => { if (e.target === scrim) closeSheet(); } }, sheet);
@@ -270,7 +272,9 @@ function closeSheet() {
   if (!layer.firstChild) return;
   clear(layer);
   $('#app').inert = false; $('#cmd').inert = false;
-  if (lastFocus?.isConnected) lastFocus.focus();
+  const target = lastFocus?.isConnected ? lastFocus : returnFocus?.();
+  (target || $('#canvas')).focus();
+  returnFocus = null;
 }
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && $('#layer').firstChild) { e.preventDefault(); closeSheet(); } });
 
@@ -343,7 +347,7 @@ function openRecord(obj, id) {
       if (focusId) document.getElementById(focusId)?.focus();
     };
     draw();
-  });
+  }, () => document.querySelector(`#canvas [data-id="${CSS.escape(id)}"]`));
 }
 
 async function deleteRecord(obj, id) {
