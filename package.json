@@ -9,8 +9,9 @@
     "icons": "node tools/make-icons.mjs",
     "test": "node --test tests/unit/*.test.mjs",
     "test:e2e": "node tests/e2e/run.mjs",
-    
-    "package": "python3 tools/package.py"
+    "package": "python3 tools/package.py",
+    "web": "npm run -s package && node tools/build-web.mjs",
+    "serve": "python3 -m http.server 8095 --bind 0.0.0.0 --directory dist/web"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^1.3.0",

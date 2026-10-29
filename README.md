@@ -28,6 +28,10 @@ Três camadas:
 2. Clique em **Carregar sem compactação** e escolha a pasta `extension/`.
 3. Clique no ícone do CRM Generativo na barra: o painel lateral abre. O botão ⤢ abre a versão em tela cheia.
 
+### Demonstração web
+
+`npm run web` monta `dist/web`: a mesma interface com uma camada (`web/chrome-shim.js`) que imita as APIs do Chrome usando o `localStorage`, mais uma página inicial com o .zip da extensão. A captura usa uma página de exemplo fixa. `npm run serve` publica em `http://0.0.0.0:8095`. `node tests/e2e/web-demo.mjs` testa a demo no Chromium.
+
 ### Desenvolver
 
 ```bash
