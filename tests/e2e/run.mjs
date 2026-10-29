@@ -109,6 +109,38 @@ await step('captura a página ativa como empresa (texto da página não vira HTM
   return { name: rec.name, note: rec.timeline[0].text.slice(0, 80) };
 });
 
+// O Chrome real não mostra o endereço da aba ao painel sem permissão, e o pedido de permissão
+// não pode ser clicado em automação: simulamos a primeira falha e a resposta do diálogo.
+await step('captura sem acesso: explica, pede permissão num clique próprio e captura', async () => {
+  const site_ = await context.newPage();
+  await site_.goto(site);
+  await panel.evaluate(() => {
+    const real = { exec: chrome.scripting.executeScript, query: chrome.tabs.query, req: chrome.permissions.request };
+    window.__restore = () => Object.assign(chrome.scripting, { executeScript: real.exec }) && Object.assign(chrome.tabs, { query: real.query }) && Object.assign(chrome.permissions, { request: real.req });
+    window.__permCalls = [];
+    let blocked = true;
+    chrome.tabs.query = async (q) => (await real.query.call(chrome.tabs, q)).map((t) => (blocked ? { id: t.id, active: t.active } : t));
+    chrome.scripting.executeScript = (a) => blocked ? Promise.reject(new Error('Cannot access contents of the page. Extension manifest must request permission to access the respective host.')) : real.exec.call(chrome.scripting, a);
+    chrome.permissions.request = (p) => { window.__permCalls.push({ origins: p.origins, gesture: navigator.userActivation.isActive }); blocked = false; return Promise.resolve(true); };
+  });
+  await panel.evaluate(async () => { const [t] = await chrome.tabs.query({ url: 'http://127.0.0.1/*' }); await chrome.tabs.update(t.id, { active: true }); });
+  await panel.click('#btn-capture');
+  await panel.waitForSelector('#btn-allow-sites');
+  assert(await panel.evaluate(() => window.__permCalls.length) === 0, 'pediu permissão antes do clique de confirmação');
+  await shot(panel, '14-painel-pedido-acesso');
+  await panel.click('#btn-allow-sites');
+  await panel.waitForSelector('#f-name');
+  const calls = await panel.evaluate(() => window.__permCalls);
+  assert(calls.length === 1 && calls[0].gesture, 'pedido de permissão fora do gesto do usuário');
+  assert(JSON.stringify(calls[0].origins) === JSON.stringify(['https://*/*', 'http://*/*']), 'origens pedidas: ' + JSON.stringify(calls[0].origins));
+  assert(await panel.inputValue('#f-name') === 'Nuvem Crédito', 'formulário sem a página capturada');
+  await panel.keyboard.press('Escape');
+  await panel.waitForSelector('.sheet', { state: 'detached' });
+  await panel.evaluate(() => window.__restore());
+  await site_.close();
+  return { origins: calls[0].origins };
+});
+
 await step('registro: editar campo e adicionar nota entram na linha do tempo', async () => {
   await panel.locator('#canvas tbody tr', { hasText: 'Nuvem Crédito' }).click();
   await panel.waitForSelector('.sheet');

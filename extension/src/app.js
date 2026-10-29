@@ -402,6 +402,7 @@ function openNew(obj, values = {}, opts = {}) {
 // Ordem: tenta ler a página com o acesso que já existe (activeTab ao abrir o painel pelo ícone, ou site já liberado).
 // Só se faltar acesso, pede a origem ao Chrome no próprio clique. O menu de contexto é o caminho sem acesso permanente.
 const NO_ACCESS = /permission|Cannot access|cannot be scripted|must request permission/i;
+const ALL_SITES = ['https://*/*', 'http://*/*'];
 
 function openCaptureForm(raw, expectedOrigin) {
   const sug = suggestFromPage(raw);
@@ -422,17 +423,38 @@ async function capture() {
     try { [res] = await run(); }
     catch (e) {
       if (!NO_ACCESS.test(String(e?.message))) throw e;
-      if (!tab.url) return toast('Sem acesso a esta aba. Clique com o botão direito na página e escolha "Capturar esta página no CRM".');
-      const origin = new URL(tab.url).origin + '/*';
-      const ok = await chrome.permissions.request({ origins: [origin] });
-      if (!ok) return toast('Sem permissão para ler esta página. Nada foi capturado.');
-      toast(`Acesso a ${new URL(tab.url).hostname} liberado. Você pode revogar em Configurações.`);
-      [res] = await run();
+      // Sem "tabs", o painel não vê o endereço da aba; só dá para pedir acesso aos sites em geral.
+      const origins = tab.url ? [new URL(tab.url).origin + '/*'] : ALL_SITES;
+      if (await chrome.permissions.contains({ origins })) return toast('Esta página não permite leitura por extensões.');
+      return askSiteAccess(origins, tab.url ? new URL(tab.url).hostname : null);
     }
     openCaptureForm(res?.result, tab.url ? new URL(tab.url).origin : null);
   } catch (e) {
     toast(NO_ACCESS.test(String(e?.message)) ? 'Esta página não permite leitura por extensões.' : 'Não foi possível capturar esta página.');
   } finally { btn.disabled = false; }
+}
+
+// Pede acesso num clique próprio do usuário: o Chrome só mostra o pedido de permissão durante um gesto.
+function askSiteAccess(origins, host) {
+  openSheet('', (sheet, titleId) => {
+    clear(sheet,
+      sheetHeader('Permitir leitura de páginas', titleId),
+      h('p', { text: host
+        ? `Para capturar, o CRM precisa ler ${host}.`
+        : 'Para capturar, o CRM precisa ler os sites que você abrir. O Chrome vai pedir sua confirmação uma vez.' }),
+      h('p', { class: 'hint', text: 'A leitura só acontece quando você clica em Capturar: título, descrição, texto selecionado e e-mails da página. Nada sai do seu navegador. Você pode revogar em Configurações.' }),
+      h('div', { class: 'row end' },
+        h('button', { class: 'btn ghost', type: 'button', text: 'Agora não', onclick: closeSheet }),
+        h('button', { class: 'btn primary', type: 'button', id: 'btn-allow-sites', text: 'Permitir e capturar', onclick: () => {
+          chrome.permissions.request({ origins }).then((ok) => {
+            closeSheet();
+            if (!ok) return toast('Sem permissão para ler páginas. Nada foi capturado.');
+            toast('Acesso liberado. Você pode revogar em Configurações.');
+            capture();
+          }, () => { closeSheet(); toast('O Chrome não abriu o pedido de permissão. Tente de novo.'); });
+        } })),
+      h('p', { class: 'hint', text: 'Prefere não liberar? Clique com o botão direito na página e escolha "Capturar esta página no CRM". Assim o acesso vale só para aquela vez.' }));
+  }, () => $('#btn-capture'));
 }
 
 // Captura iniciada pelo menu de contexto (o service worker deixa o resultado em storage.session).
@@ -542,10 +564,11 @@ function openSettings() {
       } });
       const sitesBox = h('ul', { class: 'fieldlist', id: 'sites' });
       chrome.permissions.getAll().then(({ origins = [] }) => {
-        const list = origins.filter((o) => !o.includes('*://*') && o !== 'https://*/*' && o !== 'http://*/*');
+        const list = origins.filter((o) => !o.includes('*://*'));
         if (!list.length) return clear(sitesBox, h('li', { class: 'hint', text: 'Nenhum site liberado. A captura pelo menu de contexto não deixa acesso permanente.' }));
-        clear(sitesBox, list.map((o) => h('li', {}, h('span', { text: o.replace(/\/\*$/, '') }),
-          h('button', { class: 'btn small ghost', type: 'button', 'aria-label': `Revogar acesso a ${o}`, text: 'Revogar', onclick: async () => {
+        const label = (o) => ({ 'https://*/*': 'Todos os sites (https)', 'http://*/*': 'Todos os sites (http)' })[o] || o.replace(/\/\*$/, '');
+        clear(sitesBox, list.map((o) => h('li', {}, h('span', { text: label(o) }),
+          h('button', { class: 'btn small ghost', type: 'button', 'aria-label': `Revogar acesso a ${label(o)}`, text: 'Revogar', onclick: async () => {
             const ok = await chrome.permissions.remove({ origins: [o] }).catch(() => false);
             toast(ok ? 'Acesso revogado.' : 'Não foi possível revogar (permissão obrigatória do pacote).');
             draw();

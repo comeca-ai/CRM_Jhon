@@ -1,14 +1,14 @@
 {
-  "date": "2026-10-29T09:28:35.894Z",
-  "artifact": "dist/crm-generativo-0.1.0.zip (extraído), sha256 93bf01aad45209ab6d67e15105553a08d03d46fa6752ab4485e5bc4aaaf862a7",
+  "date": "2026-10-29T14:37:54.193Z",
+  "artifact": "extension/",
   "browser": "141.0.7390.37",
-  "passed": 20,
+  "passed": 21,
   "failed": 0,
   "results": [
     {
       "name": "service worker configura abrir painel ao clicar no ícone",
       "ok": true,
-      "ms": 19,
+      "ms": 28,
       "detail": {
         "enabled": true,
         "path": "src/app.html"
@@ -17,12 +17,12 @@
     {
       "name": "telas base com dados de exemplo",
       "ok": true,
-      "ms": 111
+      "ms": 163
     },
     {
       "name": "gera tela por linguagem natural (regras)",
       "ok": true,
-      "ms": 84,
+      "ms": 119,
       "detail": {
         "filters": [
           {
@@ -41,26 +41,37 @@
     {
       "name": "kanban: arrastar negócio muda o estágio e registra na linha do tempo",
       "ok": true,
-      "ms": 165
+      "ms": 194
     },
     {
       "name": "captura a página ativa como empresa (texto da página não vira HTML)",
       "ok": true,
-      "ms": 509,
+      "ms": 816,
       "detail": {
         "name": "Nuvem Crédito",
-        "note": "Capturado de http://127.0.0.1:37663/sobre — Plataforma de crédito para pequenas "
+        "note": "Capturado de http://127.0.0.1:43653/sobre — Plataforma de crédito para pequenas "
+      }
+    },
+    {
+      "name": "captura sem acesso: explica, pede permissão num clique próprio e captura",
+      "ok": true,
+      "ms": 1064,
+      "detail": {
+        "origins": [
+          "https://*/*",
+          "http://*/*"
+        ]
       }
     },
     {
       "name": "registro: editar campo e adicionar nota entram na linha do tempo",
       "ok": true,
-      "ms": 385
+      "ms": 344
     },
     {
       "name": "aprendizado: após cliques, sugere reordenar e só muda com aceite",
       "ok": true,
-      "ms": 502,
+      "ms": 530,
       "detail": {
         "after": [
           "Empresa",
@@ -74,17 +85,17 @@
     {
       "name": "schema dinâmico: novo campo aparece na tabela",
       "ok": true,
-      "ms": 232
+      "ms": 238
     },
     {
       "name": "exportar JSON nunca inclui a chave da API",
       "ok": true,
-      "ms": 428
+      "ms": 312
     },
     {
       "name": "gerador Claude: pedido estruturado, spec validada e campo inventado descartado",
       "ok": true,
-      "ms": 4465,
+      "ms": 4368,
       "detail": {
         "model": "claude-opus-5-5",
         "card": [
@@ -99,20 +110,20 @@
     {
       "name": "gerador Claude: falha da API cai para regras com aviso",
       "ok": true,
-      "ms": 133
+      "ms": 120
     },
     {
       "name": "menu de contexto: captura sem botão do painel abre o formulário",
       "ok": true,
-      "ms": 374,
+      "ms": 378,
       "detail": {
-        "note": "Capturado de http://127.0.0.1:37663/sobre — Plataforma de crédito para pequenas empresas c"
+        "note": "Capturado de http://127.0.0.1:43653/sobre — Plataforma de crédito para pequenas empresas c"
       }
     },
     {
       "name": "configurações listam os sites com acesso",
       "ok": true,
-      "ms": 198,
+      "ms": 93,
       "detail": [
         "http://127.0.0.1Revogar",
         "https://api.anthropic.comRevogar"
@@ -121,22 +132,22 @@
     {
       "name": "backup malicioso é recusado e o armazenamento fica intacto",
       "ok": true,
-      "ms": 865
+      "ms": 835
     },
     {
       "name": "estado corrompido mostra recuperação e restaura o exemplo",
       "ok": true,
-      "ms": 1427
+      "ms": 1137
     },
     {
       "name": "aba cheia reflete o mesmo estado",
       "ok": true,
-      "ms": 745
+      "ms": 453
     },
     {
       "name": "acessibilidade (axe-core, WCAG 2.1 A/AA) no painel, registro e configurações",
       "ok": true,
-      "ms": 1277,
+      "ms": 1196,
       "detail": [
         {
           "label": "painel",
@@ -155,22 +166,22 @@
     {
       "name": "tema escuro renderiza",
       "ok": true,
-      "ms": 394
+      "ms": 536
     },
     {
       "name": "desempenho: abertura do painel e geração de tela",
       "ok": true,
-      "ms": 398,
+      "ms": 496,
       "detail": {
-        "panelOpenMs": 135,
-        "rulesGenerateMs": 87,
+        "panelOpenMs": 206,
+        "rulesGenerateMs": 64,
         "sdkLoadedWithRulesGenerator": false
       }
     },
     {
       "name": "sem erros de JavaScript nas páginas da extensão",
       "ok": true,
-      "ms": 1
+      "ms": 0
     }
   ],
   "limits": [
