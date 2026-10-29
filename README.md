@@ -26,6 +26,8 @@ Três camadas:
 
 ### Instalar para testar
 
+**Baixar:** [decida-antes-chrome-0.2.0.zip](https://github.com/comeca-ai/CRM_Jhon/releases/latest/download/decida-antes-chrome-0.2.0.zip), ou veja todas as versões em [Releases](https://github.com/comeca-ai/CRM_Jhon/releases).
+
 1. Abra `chrome://extensions` e ligue o **Modo do desenvolvedor**.
 2. Clique em **Carregar sem compactação** e escolha a pasta `extension/`.
 3. Clique no ícone do Decida Antes na barra: o painel lateral abre. O botão ⤢ abre a versão em tela cheia.
