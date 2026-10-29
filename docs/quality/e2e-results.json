@@ -1,6 +1,6 @@
 {
-  "date": "2026-10-29T14:37:54.193Z",
-  "artifact": "extension/",
+  "date": "2026-10-29T14:40:08.430Z",
+  "artifact": "dist/crm-generativo-0.1.0.zip (extraído)",
   "browser": "141.0.7390.37",
   "passed": 21,
   "failed": 0,
@@ -8,7 +8,7 @@
     {
       "name": "service worker configura abrir painel ao clicar no ícone",
       "ok": true,
-      "ms": 28,
+      "ms": 31,
       "detail": {
         "enabled": true,
         "path": "src/app.html"
@@ -17,12 +17,12 @@
     {
       "name": "telas base com dados de exemplo",
       "ok": true,
-      "ms": 163
+      "ms": 139
     },
     {
       "name": "gera tela por linguagem natural (regras)",
       "ok": true,
-      "ms": 119,
+      "ms": 86,
       "detail": {
         "filters": [
           {
@@ -41,21 +41,21 @@
     {
       "name": "kanban: arrastar negócio muda o estágio e registra na linha do tempo",
       "ok": true,
-      "ms": 194
+      "ms": 167
     },
     {
       "name": "captura a página ativa como empresa (texto da página não vira HTML)",
       "ok": true,
-      "ms": 816,
+      "ms": 488,
       "detail": {
         "name": "Nuvem Crédito",
-        "note": "Capturado de http://127.0.0.1:43653/sobre — Plataforma de crédito para pequenas "
+        "note": "Capturado de http://127.0.0.1:34333/sobre — Plataforma de crédito para pequenas "
       }
     },
     {
       "name": "captura sem acesso: explica, pede permissão num clique próprio e captura",
       "ok": true,
-      "ms": 1064,
+      "ms": 424,
       "detail": {
         "origins": [
           "https://*/*",
@@ -66,12 +66,12 @@
     {
       "name": "registro: editar campo e adicionar nota entram na linha do tempo",
       "ok": true,
-      "ms": 344
+      "ms": 283
     },
     {
       "name": "aprendizado: após cliques, sugere reordenar e só muda com aceite",
       "ok": true,
-      "ms": 530,
+      "ms": 491,
       "detail": {
         "after": [
           "Empresa",
@@ -85,17 +85,17 @@
     {
       "name": "schema dinâmico: novo campo aparece na tabela",
       "ok": true,
-      "ms": 238
+      "ms": 358
     },
     {
       "name": "exportar JSON nunca inclui a chave da API",
       "ok": true,
-      "ms": 312
+      "ms": 359
     },
     {
       "name": "gerador Claude: pedido estruturado, spec validada e campo inventado descartado",
       "ok": true,
-      "ms": 4368,
+      "ms": 4567,
       "detail": {
         "model": "claude-opus-5-5",
         "card": [
@@ -110,20 +110,20 @@
     {
       "name": "gerador Claude: falha da API cai para regras com aviso",
       "ok": true,
-      "ms": 120
+      "ms": 137
     },
     {
       "name": "menu de contexto: captura sem botão do painel abre o formulário",
       "ok": true,
-      "ms": 378,
+      "ms": 484,
       "detail": {
-        "note": "Capturado de http://127.0.0.1:43653/sobre — Plataforma de crédito para pequenas empresas c"
+        "note": "Capturado de http://127.0.0.1:34333/sobre — Plataforma de crédito para pequenas empresas c"
       }
     },
     {
       "name": "configurações listam os sites com acesso",
       "ok": true,
-      "ms": 93,
+      "ms": 167,
       "detail": [
         "http://127.0.0.1Revogar",
         "https://api.anthropic.comRevogar"
@@ -132,22 +132,22 @@
     {
       "name": "backup malicioso é recusado e o armazenamento fica intacto",
       "ok": true,
-      "ms": 835
+      "ms": 846
     },
     {
       "name": "estado corrompido mostra recuperação e restaura o exemplo",
       "ok": true,
-      "ms": 1137
+      "ms": 1438
     },
     {
       "name": "aba cheia reflete o mesmo estado",
       "ok": true,
-      "ms": 453
+      "ms": 1184
     },
     {
       "name": "acessibilidade (axe-core, WCAG 2.1 A/AA) no painel, registro e configurações",
       "ok": true,
-      "ms": 1196,
+      "ms": 2044,
       "detail": [
         {
           "label": "painel",
@@ -166,15 +166,15 @@
     {
       "name": "tema escuro renderiza",
       "ok": true,
-      "ms": 536
+      "ms": 670
     },
     {
       "name": "desempenho: abertura do painel e geração de tela",
       "ok": true,
-      "ms": 496,
+      "ms": 474,
       "detail": {
-        "panelOpenMs": 206,
-        "rulesGenerateMs": 64,
+        "panelOpenMs": 180,
+        "rulesGenerateMs": 58,
         "sdkLoadedWithRulesGenerator": false
       }
     },

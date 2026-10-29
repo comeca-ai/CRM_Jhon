@@ -1,21 +1,21 @@
 # Relatório de testes
 
 Data: 2026-10-29. Navegador: Chromium 141.0.7390.37 (headless, perfil temporário).
-Artefato: `dist/crm-generativo-0.1.0.zip (extraído), sha256 93bf01aad45209ab6d67e15105553a08d03d46fa6752ab4485e5bc4aaaf862a7`. Commit do código: `07f3251`.
+Artefato: `dist/crm-generativo-0.1.0.zip (extraído), sha256 69e5071b11b799100d78369b661aa308dc9e75dc582edb5187a0f94137011bc5`. Commit do código: `25b7dee`.
 
 ## Resumo
 | Conjunto | Resultado |
 |---|---|
 | Unitários (`npm test`) | 23 de 23 passaram |
-| Ponta a ponta no Chromium (`npm run test:e2e`) | 20 de 20 passaram |
+| Ponta a ponta no Chromium (`npm run test:e2e`) | 21 de 21 passaram |
 | Acessibilidade (axe-core, WCAG 2.1 A/AA) | sem violações graves ou críticas no painel, registro e configurações |
 | Verificador do construtor | 1 erro falso positivo (regra sem distinção de maiúsculas casa `function(` no SDK empacotado; busca exata não acha `eval`, `new Function` nem import remoto) e 1 aviso de hosts amplos, que são opcionais e justificados |
 
 ## Desempenho medido
 | Medida | Valor |
 |---|---|
-| Abertura do painel até pronto | 135 ms |
-| Gerar tela com o gerador por regras | 87 ms |
+| Abertura do painel até pronto | 180 ms |
+| Gerar tela com o gerador por regras | 58 ms |
 | SDK da Anthropic carregado com o gerador por regras | não (carregado só quando o Claude é usado) |
 
 Pacote: 117 KB compactado; o SDK (347 KB) só é baixado do próprio pacote quando o gerador Claude é usado.
@@ -28,6 +28,7 @@ Pacote: 117 KB compactado; o SDK (347 KB) só é baixado do próprio pacote quan
 | gera tela por linguagem natural (regras) | passou |
 | kanban: arrastar negócio muda o estágio e registra na linha do tempo | passou |
 | captura a página ativa como empresa (texto da página não vira HTML) | passou |
+| captura sem acesso: explica, pede permissão num clique próprio e captura | passou |
 | registro: editar campo e adicionar nota entram na linha do tempo | passou |
 | aprendizado: após cliques, sugere reordenar e só muda com aceite | passou |
 | schema dinâmico: novo campo aparece na tabela | passou |
@@ -48,7 +49,7 @@ Pacote: 117 KB compactado; o SDK (347 KB) só é baixado do próprio pacote quan
 - Painel lateral exercitado como página da extensão a 400 px; o painel nativo do Chrome não é aberto por automação.
 - Origens http://127.0.0.1 e api.anthropic.com concedidas por manifesto de teste; o diálogo de permissão real não foi clicado.
 - API da Anthropic simulada; nenhuma chamada real foi feita.
-- O diálogo real de permissão do Chrome (botão do painel pedindo acesso a um site) e o item do menu de contexto clicado por uma pessoa precisam de teste manual; o e2e chama a mesma função do menu pelo service worker.
+- Sem permissão, o Chrome real não mostra ao painel o endereço da aba, e o botão Capturar abre uma janela que pede acesso aos sites. No e2e, essa falha de acesso e a resposta do diálogo do Chrome são simuladas. O diálogo real e o item do menu de contexto clicado por uma pessoa precisam de teste manual; o e2e chama a mesma função do menu pelo service worker.
 - Nenhuma chamada real à API da Anthropic foi feita.
 
-Capturas: `docs/screenshots/` (01 a 11), tiradas desta execução.
+Capturas: `docs/screenshots/`. As de 01 a 11 e a 14 foram tiradas nesta execução; 12 e 13 vêm do teste da demo web.
