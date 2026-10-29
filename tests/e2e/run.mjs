@@ -176,8 +176,8 @@ await step('gerador Claude: pedido estruturado, spec validada e campo inventado 
   const spec = await panel.evaluate(async () => (await chrome.storage.local.get('crm.views'))['crm.views'].at(-1));
   assert(spec.generator === 'claude' && spec.groupBy === 'owner' && !spec.card.includes('campo_inventado'), 'spec do Claude não validada');
   assert((spec._warnings || []).some((w) => w.includes('campo_inventado')), 'validador não avisou do campo inventado');
-  assert(await panel.locator('#spec-warn').isVisible(), 'aviso do validador não aparece no inspetor');
   await panel.click('#insp-toggle');
+  assert(await panel.locator('#spec-warn').isVisible(), 'aviso do validador não aparece no inspetor');
   await shot(panel, '08-painel-gerado-claude');
   await panel.click('#insp-toggle');
   return { model: apiRequest.body.model, card: spec.card, warnings: spec._warnings };

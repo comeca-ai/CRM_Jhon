@@ -1,13 +1,13 @@
 {
-  "date": "2026-10-29T09:13:13.729Z",
+  "date": "2026-10-29T09:13:35.801Z",
   "browser": "141.0.7390.37",
-  "passed": 15,
-  "failed": 1,
+  "passed": 16,
+  "failed": 0,
   "results": [
     {
       "name": "service worker configura abrir painel ao clicar no ícone",
       "ok": true,
-      "ms": 27,
+      "ms": 37,
       "detail": {
         "enabled": true,
         "path": "src/app.html?surface=panel"
@@ -16,12 +16,12 @@
     {
       "name": "telas base com dados de exemplo",
       "ok": true,
-      "ms": 88
+      "ms": 172
     },
     {
       "name": "gera tela por linguagem natural (regras)",
       "ok": true,
-      "ms": 93,
+      "ms": 134,
       "detail": {
         "filters": [
           {
@@ -40,26 +40,26 @@
     {
       "name": "kanban: arrastar negócio muda o estágio e registra na linha do tempo",
       "ok": true,
-      "ms": 198
+      "ms": 181
     },
     {
       "name": "captura a página ativa como empresa (texto da página não vira HTML)",
       "ok": true,
-      "ms": 468,
+      "ms": 469,
       "detail": {
         "name": "Nuvem Crédito",
-        "note": "Capturado de http://127.0.0.1:43607/sobre — Plataforma de crédito para pequenas "
+        "note": "Capturado de http://127.0.0.1:36831/sobre — Plataforma de crédito para pequenas "
       }
     },
     {
       "name": "registro: editar campo e adicionar nota entram na linha do tempo",
       "ok": true,
-      "ms": 437
+      "ms": 367
     },
     {
       "name": "aprendizado: após cliques, sugere reordenar e só muda com aceite",
       "ok": true,
-      "ms": 608,
+      "ms": 560,
       "detail": {
         "after": [
           "Empresa",
@@ -73,33 +73,42 @@
     {
       "name": "schema dinâmico: novo campo aparece na tabela",
       "ok": true,
-      "ms": 269
+      "ms": 262
     },
     {
       "name": "exportar JSON nunca inclui a chave da API",
       "ok": true,
-      "ms": 586
+      "ms": 375
     },
     {
       "name": "gerador Claude: pedido estruturado, spec validada e campo inventado descartado",
-      "ok": false,
-      "ms": 225,
-      "error": "aviso do validador não aparece no inspetor"
+      "ok": true,
+      "ms": 4384,
+      "detail": {
+        "model": "claude-opus-5-5",
+        "card": [
+          "name",
+          "cargo"
+        ],
+        "warnings": [
+          "campos do cartão ignorados (não existem): campo_inventado"
+        ]
+      }
     },
     {
       "name": "gerador Claude: falha da API cai para regras com aviso",
       "ok": true,
-      "ms": 92
+      "ms": 104
     },
     {
       "name": "aba cheia reflete o mesmo estado",
       "ok": true,
-      "ms": 496
+      "ms": 569
     },
     {
       "name": "acessibilidade (axe-core, WCAG 2.1 A/AA) no painel, registro e configurações",
       "ok": true,
-      "ms": 1093,
+      "ms": 1157,
       "detail": [
         {
           "label": "painel",
@@ -118,15 +127,15 @@
     {
       "name": "tema escuro renderiza",
       "ok": true,
-      "ms": 394
+      "ms": 481
     },
     {
       "name": "desempenho: abertura do painel e geração de tela",
       "ok": true,
-      "ms": 347,
+      "ms": 402,
       "detail": {
-        "panelOpenMs": 145,
-        "rulesGenerateMs": 50,
+        "panelOpenMs": 147,
+        "rulesGenerateMs": 53,
         "sdkLoadedWithRulesGenerator": false
       }
     },
