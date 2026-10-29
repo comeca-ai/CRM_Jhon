@@ -1,5 +1,5 @@
 node_modules/
-.extension-builder/cache/
 dist/
 *.zip
 .env
+.extension-builder/.state.lock

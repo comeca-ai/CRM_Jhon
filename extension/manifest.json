@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "CRM Generativo",
+  "short_name": "CRM Gen",
+  "version": "0.1.0",
+  "description": "CRM no painel lateral: capture empresas e contatos da página aberta e crie telas descrevendo-as em português.",
+  "minimum_chrome_version": "116",
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": { "default_title": "Abrir CRM Generativo", "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png" } },
+  "background": { "service_worker": "src/sw.js", "type": "module" },
+  "side_panel": { "default_path": "src/app.html?surface=panel" },
+  "permissions": ["storage", "sidePanel", "scripting", "activeTab"],
+  "optional_host_permissions": ["https://*/*", "http://*/*"]
+}

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM Generativo</title>
+<link rel="stylesheet" href="app.css">
+<script type="module" src="app.js"></script>
+</head>
+<body>
+<a class="skip" href="#canvas">Pular para a tela</a>
+<div id="app">
+  <nav id="side" aria-label="Telas">
+    <div class="ws"><span class="dot" aria-hidden="true">D</span><div><b>Datarisk</b><small>CRM generativo</small></div></div>
+    <h2 class="navhead">Telas base</h2>
+    <div id="nav-base" class="navlist"></div>
+    <h2 class="navhead">Telas geradas pela IA</h2>
+    <div id="nav-gen" class="navlist"></div>
+  </nav>
+
+  <main id="main">
+    <header id="top">
+      <span class="dot brand" aria-hidden="true">D</span><span class="appname" aria-hidden="true">CRM Generativo</span>
+      <div class="titlewrap">
+        <h1 id="vtitle">CRM Generativo</h1>
+        <div class="badges"><span class="badge" id="vtype"></span><span class="badge gen" id="vgen" hidden>gerada pela IA</span><span class="badge" id="vcount"></span></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="btn-capture" type="button" title="Salvar a página aberta como registro">Capturar página</button>
+        <button class="btn" id="btn-new" type="button" aria-label="Novo registro" title="Novo registro">＋</button>
+        <button class="btn" id="btn-full" type="button" aria-label="Abrir em tela cheia" title="Abrir em tela cheia">⤢</button>
+        <button class="btn" id="btn-settings" type="button" aria-label="Configurações" title="Configurações">⚙</button>
+      </div>
+    </header>
+    <div id="chips" role="toolbar" aria-label="Telas"></div>
+    <div id="banners"></div>
+    <section id="canvas" tabindex="-1" aria-labelledby="vtitle"></section>
+    <button id="insp-toggle" class="btn ghost" type="button" aria-expanded="false" aria-controls="inspector">Spec da tela e aprendizado</button>
+  </main>
+
+  <aside id="inspector" aria-label="Spec da tela e aprendizado">
+    <section>
+      <h2>Spec da tela <span class="gen-ink">· JSON</span></h2>
+      <p class="muted">A IA não escreve HTML: ela compõe esta definição, validada contra o schema e desenhada por componentes fixos.</p>
+      <pre id="spec" tabindex="0" aria-label="Spec JSON da tela ativa"></pre>
+      <p id="spec-warn" class="warn" hidden></p>
+    </section>
+    <section>
+      <h2>Aprendizado de uso</h2>
+      <p class="muted">Cada clique em coluna, célula ou cartão vira sinal. O sistema propõe; você aceita.</p>
+      <div id="learnbars"></div>
+    </section>
+  </aside>
+</div>
+
+<form id="cmd" autocomplete="off">
+  <label class="sr-only" for="cmd-input">Descreva uma tela</label>
+  <input id="cmd-input" maxlength="300" placeholder='Descreva uma tela… ex.: "negócios abertos acima de 150 mil"'>
+  <button class="btn primary" id="cmd-go" type="submit">Gerar tela</button>
+</form>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="layer"></div>
+</body>
+</html>
