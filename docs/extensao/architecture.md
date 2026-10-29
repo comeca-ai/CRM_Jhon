@@ -7,11 +7,15 @@ Extensão Manifest V3, modo **local**, sem build obrigatório: módulos ES puros
 | Contexto | Arquivo | Papel |
 |---|---|---|
 | Service worker | `src/sw.js` | instala dados de exemplo na primeira execução; abre o painel ao clicar no ícone |
-| Painel lateral | `src/app.html?surface=panel` | UI principal (estreita) |
+| Painel lateral | `src/app.html` | UI principal (estreita) |
 | Aba cheia | `src/app.html?surface=tab` | mesma UI com barra lateral e inspetor visíveis |
 | Script injetado sob demanda | `src/core/capture.js` (`extractPageInfo`) | lê metadados da página ativa só quando o usuário clica em "Capturar página" |
 
 Não há content script permanente nem mensagens entre páginas e extensão: a função injetada só retorna dados, e o painel trata o retorno como não confiável (texto, nunca HTML).
+
+Fluxo de captura: o botão do painel tenta ler a página com o acesso que já existe e só pede a origem ao Chrome se faltar acesso (permissão que persiste; revogável em Configurações). O menu de contexto chama o service worker, que lê a página com activeTab e entrega o resultado ao painel por `chrome.storage.session`. A URL é guardada sem query nem fragmento.
+
+Endurecimento: CSP `connect-src 'self' https://api.anthropic.com`, `incognito: not_allowed`, importação e estado salvo validados por completo em `core/validate-state.js` (com tela de recuperação se o armazenamento estiver corrompido).
 
 ## Dados (`chrome.storage.local`)
 | Chave | Conteúdo |
@@ -28,6 +32,7 @@ Não há content script permanente nem mensagens entre páginas e extensão: a f
 | `storage` | guardar o CRM no próprio navegador |
 | `sidePanel` | painel lateral |
 | `scripting` + `activeTab` | ler título/URL/descrição da página quando o usuário pede a captura |
+| `contextMenus` | "Capturar esta página no CRM": concede activeTab só àquela aba, sem acesso permanente |
 | `optional_host_permissions` `https://*/*`, `http://*/*` | pedidas por origem no clique de captura, e para `api.anthropic.com` ao ligar o gerador Claude |
 
 ## Contrato da spec de tela

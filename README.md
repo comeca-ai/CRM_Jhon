@@ -10,6 +10,36 @@ Três camadas:
 2. **Telas como specs JSON** — nenhuma tela é HTML escrito à mão. Cada view é uma definição declarativa (`type`, `object`, `columns`, `groupBy`, `filter`, `sort`) renderizada por um conjunto fechado de componentes (tabela, kanban, record page). A IA compõe specs; ela nunca escreve HTML/CSS livre em produção — isso mantém o sistema previsível e seguro.
 3. **Geração + aprendizado** — o usuário descreve uma tela em linguagem natural ("kanban de negócios por responsável") e a spec nasce na hora. Cada interação (clique em célula, ordenação, abertura de registro) vira sinal de telemetria; o sistema aprende quais campos importam e reotimiza as telas.
 
+## Extensão do Chrome (novo)
+
+`extension/` é o CRM funcionando como extensão do Chrome (Manifest V3), no painel lateral:
+
+- **Capturar página:** no site de uma empresa ou num perfil do LinkedIn, um clique abre o formulário já preenchido (nome, site, cargo, e-mails da página) e o registro nasce com o evento "capturado de <url>" na linha do tempo.
+- **Telas por linguagem natural:** "negócios abertos acima de 150 mil", "kanban de contatos por responsável", "empresas clientes". Cada pedido vira uma spec JSON validada contra o schema e desenhada por componentes fixos.
+- **Gerador Claude (opcional):** com a sua chave da API da Anthropic, o Claude compõe a spec via saída estruturada. Falha, recusa ou campo inventado são tratados; sem chave, o gerador por regras funciona offline.
+- **Registro:** edição campo a campo, notas e linha do tempo; kanban com arrastar e soltar.
+- **Aprendizado:** cada clique vira sinal; o CRM propõe reordenar colunas e só muda com o seu aceite.
+- **Schema dinâmico:** crie campos novos (texto, número, dinheiro, lista, data, link…) em qualquer objeto.
+- **Dados locais:** tudo em `chrome.storage.local`, com exportação/importação em JSON (a chave da API nunca entra no backup).
+
+### Instalar para testar
+
+1. Abra `chrome://extensions` e ligue o **Modo do desenvolvedor**.
+2. Clique em **Carregar sem compactação** e escolha a pasta `extension/`.
+3. Clique no ícone do CRM Generativo na barra: o painel lateral abre. O botão ⤢ abre a versão em tela cheia.
+
+### Desenvolver
+
+```bash
+npm install
+npm test            # testes unitários (node --test)
+npm run test:e2e    # extensão real no Chromium: jornadas, acessibilidade (axe), desempenho
+npm run vendor      # regenera extension/src/vendor/anthropic.js a partir do @anthropic-ai/sdk
+npm run package     # gera dist/crm-generativo-<versão>.zip com SHA-256
+```
+
+Documentos: [pesquisa](docs/extensao/research.md), [arquitetura](docs/extensao/architecture.md), [interface](docs/extensao/design-spec.md), [privacidade](PRIVACY.md), [qualidade](docs/quality/), [loja](docs/release/), [capturas](docs/screenshots/).
+
 ## Protótipo
 
 `prototype/crm-generativo.html` — protótipo funcional em um único arquivo, sem dependências. Abra no navegador e:
@@ -28,12 +58,13 @@ No protótipo o gerador é um parser por regras. No produto real, esse é exatam
 ## Roadmap
 
 - [ ] Backend com schema dinâmico (Postgres + JSONB de atributos, ou EAV) e API de introspecção para o gerador
-- [ ] Gerador de telas com LLM (substituir o parser por regras), com validação de spec contra o schema
-- [ ] Loop de aprendizado persistente: telemetria de uso → sugestões de layout → aceite do usuário
+- [x] Gerador de telas com LLM (Claude, opcional), com validação de spec contra o schema — na extensão
+- [x] Extensão do Chrome com captura da página ativa e painel lateral
+- [x] Loop de aprendizado persistente: telemetria de uso → sugestões de layout → aceite do usuário (local, na extensão)
 - [ ] **Integração Granola (MCP)**: reuniões gravadas/transcritas no Granola viram eventos na timeline do registro (empresa/negócio) e alimentam campos como "próximo passo" automaticamente — cobre o caso "gravar reuniões" do Attio sem construir gravação própria
 - [ ] Sincronização de e-mail/calendário para enriquecimento automático de contatos
 - [ ] Permissões por workspace e multiusuário
 
 ## Stack prevista
 
-Protótipo: HTML/CSS/JS vanilla. Produto: a definir (sugestão: Next.js + Postgres + camada MCP para integrações como Granola).
+Protótipo e extensão: HTML/CSS/JS sem framework (módulos ES), SDK oficial da Anthropic empacotado com esbuild. Produto web: a definir (sugestão: Next.js + Postgres + camada MCP para integrações como Granola).

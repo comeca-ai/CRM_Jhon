@@ -1,12 +1,14 @@
 // Persistência local. Toda leitura/escrita do CRM passa por aqui (chrome.storage.local).
 import { SEED_SCHEMA, SEED_RECORDS, SEED_VIEWS, DEFAULT_SETTINGS } from './seed.js';
+import { validateState, MAX_IMPORT_BYTES } from './validate-state.js';
 
 export const KEYS = { schema: 'crm.schema', records: 'crm.records', views: 'crm.views', usage: 'crm.usage', settings: 'crm.settings' };
 const clone = (x) => structuredClone(x);
 
 export async function ensureSeeded() {
   const cur = await chrome.storage.local.get(KEYS.schema);
-  if (cur[KEYS.schema]) return false;
+  const sc = cur[KEYS.schema];
+  if (sc && typeof sc === 'object' && Object.keys(sc).length) return false;
   await chrome.storage.local.set({
     [KEYS.schema]: clone(SEED_SCHEMA), [KEYS.records]: clone(SEED_RECORDS), [KEYS.views]: clone(SEED_VIEWS),
     [KEYS.usage]: {}, [KEYS.settings]: clone(DEFAULT_SETTINGS)
@@ -35,12 +37,11 @@ export function exportPayload(state) {
 }
 
 export function parseImport(text) {
+  if (typeof text !== 'string' || text.length > MAX_IMPORT_BYTES) throw new Error('Arquivo grande demais (limite de 5 MB).');
   let data;
   try { data = JSON.parse(text); } catch { throw new Error('Arquivo não é um JSON válido.'); }
-  if (!data || data.app !== 'crm-generativo' || typeof data.schema !== 'object' || typeof data.records !== 'object')
-    throw new Error('Arquivo não é um backup do CRM Generativo.');
-  for (const k of Object.keys(data.schema)) if (!Array.isArray(data.records[k] ?? [])) throw new Error('Registros inválidos em ' + k);
-  return data;
+  if (!data || data.app !== 'crm-generativo') throw new Error('Arquivo não é um backup do CRM Generativo.');
+  try { return validateState(data); } catch (e) { throw new Error('Backup recusado: ' + e.message); }
 }
 
 export async function resetAll() {

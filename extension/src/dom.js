@@ -7,7 +7,8 @@ export function h(tag, props = {}, ...children) {
     else if (k === 'text') el.textContent = v;
     else if (k === 'dataset') Object.assign(el.dataset, v);
     else if (k === 'style') el.setAttribute('style', v);
-    else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k.startsWith('on')) { if (typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v); else throw new Error('handler inline recusado: ' + k); }
+    else if (k === 'value') el.value = v; // propriedade, nunca atributo (não expõe valores como a chave da API no DOM)
     else if (k in el && typeof v !== 'string') el[k] = v;
     else el.setAttribute(k, v === true ? '' : String(v));
   }

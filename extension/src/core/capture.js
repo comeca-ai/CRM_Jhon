@@ -2,16 +2,22 @@
 // extractPageInfo roda DENTRO da página (via chrome.scripting) e só devolve dados; tudo que volta é tratado como texto não confiável.
 export function extractPageInfo() {
   const meta = (sel) => document.querySelector(sel)?.getAttribute('content')?.trim() || '';
-  const emails = [...document.querySelectorAll('a[href^="mailto:"]')]
-    .map((a) => decodeURIComponent(a.getAttribute('href').slice(7).split('?')[0]).trim())
-    .filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
+  const cut = (v, n) => String(v || '').slice(0, n);
+  const emails = [];
+  for (const a of document.querySelectorAll('a[href^="mailto:"]')) {
+    if (emails.length >= 20) break;
+    try {
+      const e = decodeURIComponent(a.getAttribute('href').slice(7).split('?')[0]).trim();
+      if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e) && e.length <= 120) emails.push(e);
+    } catch { /* e-mail malformado na página: ignora */ }
+  }
   return {
-    url: location.href,
-    title: document.title || '',
+    url: location.origin + location.pathname,
+    title: cut(document.title, 300),
     description: meta('meta[name="description"]') || meta('meta[property="og:description"]'),
     siteName: meta('meta[property="og:site_name"]'),
     ogTitle: meta('meta[property="og:title"]'),
-    selection: String(window.getSelection?.() || '').trim(),
+    selection: cut(String(window.getSelection?.() || '').trim(), 600),
     emails: [...new Set(emails)].slice(0, 5)
   };
 }
@@ -26,7 +32,12 @@ export function suggestFromPage(raw) {
     emails: Array.isArray(raw?.emails) ? raw.emails.map((e) => clip(e, 120)).slice(0, 5) : []
   };
   let host = '';
-  try { const u = new URL(info.url); if (!/^https?:$/.test(u.protocol)) throw 0; host = u.hostname.replace(/^www\./, ''); } catch { return { ok: false, reason: 'Esta página não pode ser capturada (só sites http/https).' }; }
+  try {
+    const u = new URL(info.url);
+    if (!/^https?:$/.test(u.protocol)) throw 0;
+    host = u.hostname.replace(/^www\./, '');
+    info.url = u.origin + u.pathname; // sem query nem fragmento: evita guardar tokens e rastreio
+  } catch { return { ok: false, reason: 'Esta página não pode ser capturada (só sites http/https).' }; }
 
   const isProfile = /(^|\.)linkedin\.com$/.test(host) && /\/in\//.test(info.url);
   const cleanTitle = (t) => t.split(/\s[|\-–—:·]\s/)[0].trim();

@@ -23,19 +23,34 @@
   },
   "stages": {
     "research": {
-      "status": "pending"
+      "status": "evidenced",
+      "evidence": "docs/extensao/research.md",
+      "sha256": "ba665b6c29dd6809e8a297774a56adc986eadda9b1d0e09aa364ca9689da2f37",
+      "recorded_at": "2026-10-29T09:15:46.536907+00:00"
     },
     "architecture": {
-      "status": "pending"
+      "status": "evidenced",
+      "evidence": "docs/extensao/architecture.md",
+      "sha256": "d66a16429a42e2233424d180070fcb71c0861e4f0efe6580b2a5e1a37cdc0ee9",
+      "recorded_at": "2026-10-29T09:15:46.775629+00:00"
     },
     "design": {
-      "status": "pending"
+      "status": "evidenced",
+      "evidence": "docs/extensao/design-spec.md",
+      "sha256": "ab0a61e083a0e503b6b896768e86a5e6d0fa96414b18418e459e9ddf6244c067",
+      "recorded_at": "2026-10-29T09:15:47.005478+00:00"
     },
     "build": {
-      "status": "pending"
+      "status": "evidenced",
+      "evidence": "extension/manifest.json",
+      "sha256": "2052e9960fa684467bee29cc131fd60b5cf8762651640d785ad53e0a6ff4a540",
+      "recorded_at": "2026-10-29T09:15:47.252104+00:00"
     },
     "test": {
-      "status": "pending"
+      "status": "evidenced",
+      "evidence": "docs/quality/e2e-results.json",
+      "sha256": "bff55ee387130d1938ad9200b0aaf8c456646332d902f7d38551a182942e5acb",
+      "recorded_at": "2026-10-29T09:15:47.560921+00:00"
     },
     "release": {
       "status": "pending"

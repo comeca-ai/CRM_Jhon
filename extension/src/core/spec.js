@@ -7,13 +7,14 @@ export const NUMERIC = ['money', 'number', 'percent'];
 export const FIELD_TYPES = ['text', 'number', 'money', 'percent', 'select', 'status', 'stage', 'user', 'ref', 'email', 'url', 'date'];
 
 const isStr = (v) => typeof v === 'string';
-const fieldOf = (schema, obj, id) => schema[obj]?.fields.find((f) => f.id === id);
+const hasObj = (schema, obj) => typeof obj === 'string' && Object.hasOwn(schema, obj);
+const fieldOf = (schema, obj, id) => (hasObj(schema, obj) ? schema[obj].fields.find((f) => f.id === id) : undefined);
 
 export function validateSpec(input, schema) {
   const errors = [];
   if (!input || typeof input !== 'object') return { ok: false, errors: ['spec ausente'] };
   const obj = input.object;
-  if (!isStr(obj) || !schema[obj]) return { ok: false, errors: [`objeto inexistente: ${String(obj)}`] };
+  if (!hasObj(schema, obj)) return { ok: false, errors: [`objeto inexistente: ${String(obj)}`] };
   const type = VIEW_TYPES.includes(input.type) ? input.type : null;
   if (!type) return { ok: false, errors: [`tipo de tela inválido: ${String(input.type)}`] };
   const known = (id) => isStr(id) && !!fieldOf(schema, obj, id);

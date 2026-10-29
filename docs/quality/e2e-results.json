@@ -1,27 +1,28 @@
 {
-  "date": "2026-10-29T09:13:35.801Z",
+  "date": "2026-10-29T09:27:34.932Z",
+  "artifact": "extension/",
   "browser": "141.0.7390.37",
-  "passed": 16,
+  "passed": 20,
   "failed": 0,
   "results": [
     {
       "name": "service worker configura abrir painel ao clicar no ícone",
       "ok": true,
-      "ms": 37,
+      "ms": 25,
       "detail": {
         "enabled": true,
-        "path": "src/app.html?surface=panel"
+        "path": "src/app.html"
       }
     },
     {
       "name": "telas base com dados de exemplo",
       "ok": true,
-      "ms": 172
+      "ms": 125
     },
     {
       "name": "gera tela por linguagem natural (regras)",
       "ok": true,
-      "ms": 134,
+      "ms": 133,
       "detail": {
         "filters": [
           {
@@ -40,26 +41,26 @@
     {
       "name": "kanban: arrastar negócio muda o estágio e registra na linha do tempo",
       "ok": true,
-      "ms": 181
+      "ms": 260
     },
     {
       "name": "captura a página ativa como empresa (texto da página não vira HTML)",
       "ok": true,
-      "ms": 469,
+      "ms": 865,
       "detail": {
         "name": "Nuvem Crédito",
-        "note": "Capturado de http://127.0.0.1:36831/sobre — Plataforma de crédito para pequenas "
+        "note": "Capturado de http://127.0.0.1:45827/sobre — Plataforma de crédito para pequenas "
       }
     },
     {
       "name": "registro: editar campo e adicionar nota entram na linha do tempo",
       "ok": true,
-      "ms": 367
+      "ms": 372
     },
     {
       "name": "aprendizado: após cliques, sugere reordenar e só muda com aceite",
       "ok": true,
-      "ms": 560,
+      "ms": 505,
       "detail": {
         "after": [
           "Empresa",
@@ -73,17 +74,17 @@
     {
       "name": "schema dinâmico: novo campo aparece na tabela",
       "ok": true,
-      "ms": 262
+      "ms": 280
     },
     {
       "name": "exportar JSON nunca inclui a chave da API",
       "ok": true,
-      "ms": 375
+      "ms": 365
     },
     {
       "name": "gerador Claude: pedido estruturado, spec validada e campo inventado descartado",
       "ok": true,
-      "ms": 4384,
+      "ms": 4586,
       "detail": {
         "model": "claude-opus-5-5",
         "card": [
@@ -98,17 +99,44 @@
     {
       "name": "gerador Claude: falha da API cai para regras com aviso",
       "ok": true,
-      "ms": 104
+      "ms": 119
+    },
+    {
+      "name": "menu de contexto: captura sem botão do painel abre o formulário",
+      "ok": true,
+      "ms": 304,
+      "detail": {
+        "note": "Capturado de http://127.0.0.1:45827/sobre — Plataforma de crédito para pequenas empresas c"
+      }
+    },
+    {
+      "name": "configurações listam os sites com acesso",
+      "ok": true,
+      "ms": 137,
+      "detail": [
+        "http://127.0.0.1Revogar",
+        "https://api.anthropic.comRevogar"
+      ]
+    },
+    {
+      "name": "backup malicioso é recusado e o armazenamento fica intacto",
+      "ok": true,
+      "ms": 844
+    },
+    {
+      "name": "estado corrompido mostra recuperação e restaura o exemplo",
+      "ok": true,
+      "ms": 991
     },
     {
       "name": "aba cheia reflete o mesmo estado",
       "ok": true,
-      "ms": 569
+      "ms": 503
     },
     {
       "name": "acessibilidade (axe-core, WCAG 2.1 A/AA) no painel, registro e configurações",
       "ok": true,
-      "ms": 1157,
+      "ms": 1292,
       "detail": [
         {
           "label": "painel",
@@ -127,22 +155,22 @@
     {
       "name": "tema escuro renderiza",
       "ok": true,
-      "ms": 481
+      "ms": 469
     },
     {
       "name": "desempenho: abertura do painel e geração de tela",
       "ok": true,
-      "ms": 402,
+      "ms": 366,
       "detail": {
-        "panelOpenMs": 147,
-        "rulesGenerateMs": 53,
+        "panelOpenMs": 160,
+        "rulesGenerateMs": 64,
         "sdkLoadedWithRulesGenerator": false
       }
     },
     {
       "name": "sem erros de JavaScript nas páginas da extensão",
       "ok": true,
-      "ms": 0
+      "ms": 2
     }
   ],
   "limits": [

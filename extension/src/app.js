@@ -7,6 +7,7 @@ import { generateWithClaude, ClaudeGeneratorError, ANTHROPIC_ORIGIN, DEFAULT_MOD
 import { track, ranking, suggestion } from './core/learning.js';
 import { createRecord, updateField, addNote, relativeTime } from './core/records.js';
 import { extractPageInfo, suggestFromPage, captureNote } from './core/capture.js';
+import { validateState } from './core/validate-state.js';
 
 const surface = new URLSearchParams(location.search).get('surface') || 'panel';
 let S; // estado: schema, records, views, usage, settings
@@ -362,6 +363,8 @@ async function deleteRecord(obj, id) {
 function openNew(obj, values = {}, opts = {}) {
   openSheet('', (sheet, titleId) => {
     let current = obj;
+    let noteText = opts.note || '';
+    let noteEl = null;
     const objects = Object.keys(S.schema);
     const draw = () => {
       const vals = {};
@@ -370,14 +373,17 @@ function openNew(obj, values = {}, opts = {}) {
         h('div', { class: 'seg', role: 'radiogroup', 'aria-label': 'Tipo de registro' }, objects.map((o) => h('label', {},
           h('input', { type: 'radio', name: 'obj', value: o, checked: o === current, onchange: () => { current = o; draw(); } }), S.schema[o].singular || S.schema[o].label))),
         S.schema[current].fields.map((f) => { const row = inputFor(current, f, values[f.id]); vals[f.id] = row.querySelector('input,select'); return row; }),
+        opts.capture && [h('h3', { text: 'Nota da captura' }),
+          h('p', { class: 'hint', text: 'Entra na linha do tempo. Revise ou apague o que não quiser guardar.' }),
+          (noteEl = h('textarea', { id: 'capture-note', 'aria-label': 'Nota da captura', maxlength: '2000', value: noteText, oninput: (e) => { noteText = e.target.value; } }))],
         h('p', { class: 'err', id: 'new-err', role: 'alert' }),
         h('div', { class: 'row end' }, h('button', { class: 'btn', type: 'button', text: 'Cancelar', onclick: closeSheet }),
           h('button', { class: 'btn primary', type: 'button', text: 'Salvar', onclick: async () => {
             try {
               const data = Object.fromEntries(Object.entries(vals).map(([k, el]) => [k, el.value]));
-              const event = opts.event || { kind: 'created', text: 'Registro criado manualmente' };
+              const capNote = noteText.trim().slice(0, 2000);
+              const event = opts.capture ? { kind: 'capture', text: capNote || 'Capturado de página' } : { kind: 'created', text: 'Registro criado manualmente' };
               const rec = createRecord(S.schema, current, data, event);
-              if (opts.note) rec.timeline.push({ t: rec.createdAt, kind: 'note', text: opts.note });
               S.records[current].unshift(rec);
               await save('records', S.records);
               closeSheet();
@@ -393,30 +399,50 @@ function openNew(obj, values = {}, opts = {}) {
 }
 
 // ---------- captura da página ativa ----------
+// Ordem: tenta ler a página com o acesso que já existe (activeTab ao abrir o painel pelo ícone, ou site já liberado).
+// Só se faltar acesso, pede a origem ao Chrome no próprio clique. O menu de contexto é o caminho sem acesso permanente.
+const NO_ACCESS = /permission|Cannot access|cannot be scripted|must request permission/i;
+
+function openCaptureForm(raw, expectedOrigin) {
+  const sug = suggestFromPage(raw);
+  if (!sug.ok) return toast(sug.reason);
+  if (expectedOrigin && !sug.info.url.startsWith(expectedOrigin)) return toast('A aba mudou de página durante a captura. Tente de novo.');
+  openNew(sug.object, sug.values, { title: 'Capturar página', sub: sug.host, capture: true, note: captureNote(sug.info) });
+}
+
 async function capture() {
   const btn = $('#btn-capture');
+  btn.disabled = true;
   try {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (!tab?.id) return toast('Nenhuma aba ativa para capturar.');
-    let origin = null;
-    if (tab.url) { try { const u = new URL(tab.url); if (/^https?:$/.test(u.protocol)) origin = u.origin + '/*'; } catch {} }
-    if (tab.url && !origin) return toast('Páginas internas do Chrome não podem ser capturadas. Abra o site da empresa ou o perfil.');
-    // Sem URL visível significa que ainda não temos acesso: pedimos a origem no próprio clique (gesto do usuário).
-    if (origin && !(await chrome.permissions.contains({ origins: [origin] }))) {
+    if (tab.url && !/^https?:/i.test(tab.url)) return toast('Páginas internas do Chrome não podem ser capturadas. Abra o site da empresa ou o perfil.');
+    const run = () => chrome.scripting.executeScript({ target: { tabId: tab.id }, func: extractPageInfo });
+    let res;
+    try { [res] = await run(); }
+    catch (e) {
+      if (!NO_ACCESS.test(String(e?.message))) throw e;
+      if (!tab.url) return toast('Sem acesso a esta aba. Clique com o botão direito na página e escolha "Capturar esta página no CRM".');
+      const origin = new URL(tab.url).origin + '/*';
       const ok = await chrome.permissions.request({ origins: [origin] });
       if (!ok) return toast('Sem permissão para ler esta página. Nada foi capturado.');
+      toast(`Acesso a ${new URL(tab.url).hostname} liberado. Você pode revogar em Configurações.`);
+      [res] = await run();
     }
-    btn.disabled = true;
-    const [res] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: extractPageInfo });
-    const sug = suggestFromPage(res?.result);
-    if (!sug.ok) return toast(sug.reason);
-    openNew(sug.object, sug.values, {
-      title: 'Capturar página', sub: sug.host,
-      event: { kind: 'capture', text: captureNote(sug.info) }
-    });
+    openCaptureForm(res?.result, tab.url ? new URL(tab.url).origin : null);
   } catch (e) {
-    toast(/permission|Cannot access|cannot be scripted/i.test(String(e?.message)) ? 'Esta página não permite leitura por extensões.' : 'Não foi possível capturar esta página.');
+    toast(NO_ACCESS.test(String(e?.message)) ? 'Esta página não permite leitura por extensões.' : 'Não foi possível capturar esta página.');
   } finally { btn.disabled = false; }
+}
+
+// Captura iniciada pelo menu de contexto (o service worker deixa o resultado em storage.session).
+async function consumePendingCapture() {
+  const { 'crm.pendingCapture': pend } = await chrome.storage.session.get('crm.pendingCapture');
+  if (!pend) return;
+  await chrome.storage.session.remove('crm.pendingCapture');
+  if (Date.now() - pend.at > 120000) return;
+  if (pend.error) return toast(pend.error);
+  openCaptureForm(pend.result, null);
 }
 
 // ---------- geração de telas ----------
@@ -433,6 +459,7 @@ async function generate(prompt) {
         raw = generateWithRules(prompt, S.schema);
       }
     } else raw = generateWithRules(prompt, S.schema);
+    delete raw.id; // id sempre gerado aqui, nunca vindo do gerador
     const res = validateSpec(raw, S.schema);
     if (!res.ok) { toast('Não consegui montar essa tela: ' + res.errors.join('; ')); return; }
     const spec = res.spec;
@@ -498,15 +525,32 @@ function openSettings() {
       drawSchema();
       const fileIn = h('input', { type: 'file', accept: 'application/json,.json', class: 'sr-only', id: 'import-file', onchange: async (e) => {
         const file = e.target.files?.[0]; if (!file) return;
+        e.target.value = '';
         try {
-          const data = parseImport(await file.text());
-          const views = (data.views || []).map((v) => validateSpec(v, data.schema)).filter((r) => r.ok).map((r) => r.spec);
-          Object.assign(S, { schema: data.schema, records: data.records, views: views.length ? views : S.views, usage: data.usage || {} });
-          S.settings = { ...S.settings, ...(data.settings || {}), apiKey: S.settings.apiKey };
-          await Promise.all(['schema', 'records', 'views', 'usage', 'settings'].map((k) => save(k, S[k])));
-          closeSheet(); render(); toast('Backup importado.');
+          if (file.size > 5 * 1024 * 1024) throw new Error('Arquivo grande demais (limite de 5 MB).');
+          const data = parseImport(await file.text()); // já validado por completo; nada foi gravado ainda
+          const before = exportPayload(S);
+          Object.assign(S, data); // gerador, modelo e chave continuam os deste navegador
+          await Promise.all(['schema', 'records', 'views', 'usage'].map((k) => save(k, S[k])));
+          activeId = S.views[0].id;
+          closeSheet(); render();
+          toast('Backup importado.', { label: 'Desfazer', run: async () => {
+            Object.assign(S, { schema: before.schema, records: before.records, views: before.views, usage: before.usage });
+            await Promise.all(['schema', 'records', 'views', 'usage'].map((k) => save(k, S[k]))); render();
+          } });
         } catch (er) { toast(er.message); }
       } });
+      const sitesBox = h('ul', { class: 'fieldlist', id: 'sites' });
+      chrome.permissions.getAll().then(({ origins = [] }) => {
+        const list = origins.filter((o) => !o.includes('*://*') && o !== 'https://*/*' && o !== 'http://*/*');
+        if (!list.length) return clear(sitesBox, h('li', { class: 'hint', text: 'Nenhum site liberado. A captura pelo menu de contexto não deixa acesso permanente.' }));
+        clear(sitesBox, list.map((o) => h('li', {}, h('span', { text: o.replace(/\/\*$/, '') }),
+          h('button', { class: 'btn small ghost', type: 'button', 'aria-label': `Revogar acesso a ${o}`, text: 'Revogar', onclick: async () => {
+            const ok = await chrome.permissions.remove({ origins: [o] }).catch(() => false);
+            toast(ok ? 'Acesso revogado.' : 'Não foi possível revogar (permissão obrigatória do pacote).');
+            draw();
+          } }))));
+      });
       clear(sheet,
         sheetHeader('Configurações', titleId),
         h('h3', { text: 'Gerador de telas' }),
@@ -527,6 +571,7 @@ function openSettings() {
           } }))),
         h('p', { class: 'hint', text: 'Qualquer que seja o gerador, a tela nasce como spec JSON e passa pelo validador antes de aparecer.' }),
         h('h3', { text: 'Schema (objetos e campos)' }), schemaBox,
+        h('h3', { text: 'Sites com acesso' }), sitesBox,
         h('h3', { text: 'Dados' }),
         h('div', { class: 'row' },
           h('button', { class: 'btn small', type: 'button', text: 'Exportar JSON', onclick: () => {
@@ -551,8 +596,18 @@ function openSettings() {
 const TYPE_LABEL = { text: 'texto', number: 'número', money: 'dinheiro', percent: 'percentual', select: 'lista', status: 'status', stage: 'estágio', user: 'pessoa', ref: 'referência', email: 'e-mail', url: 'link', date: 'data' };
 
 // ---------- início ----------
+function showRecovery(err) {
+  clear(document.body, h('main', { class: 'sheet', style: 'width:100%;box-shadow:none', role: 'alert' },
+    h('h2', { text: 'Os dados salvos do CRM estão inválidos' }),
+    h('p', { class: 'hint', text: String(err?.message || err) }),
+    h('p', { text: 'Você pode restaurar os dados de exemplo para voltar a usar o CRM. Os dados atuais serão substituídos.' }),
+    h('div', { class: 'row' }, h('button', { class: 'btn primary', type: 'button', text: 'Restaurar exemplo', onclick: async () => { await resetAll(); location.reload(); } }))));
+}
+
 async function init() {
-  S = await loadAll();
+  const raw = await loadAll();
+  try { S = { ...validateState(raw), settings: raw.settings }; }
+  catch (e) { showRecovery(e); return; }
   activeId = S.settings.lastView && S.views.some((v) => v.id === S.settings.lastView) ? S.settings.lastView : S.views[0]?.id;
   if (surface === 'tab') $('#btn-full').hidden = true;
   $('#btn-full').addEventListener('click', () => chrome.tabs.create({ url: chrome.runtime.getURL('src/app.html?surface=tab') }));
@@ -565,16 +620,25 @@ async function init() {
     $('#inspector').classList.toggle('open', open);
   });
   $('#cmd').addEventListener('submit', (e) => { e.preventDefault(); const q = $('#cmd-input').value.trim(); if (q) generate(q); });
+  chrome.storage.session.onChanged.addListener((ch) => { if (ch['crm.pendingCapture']?.newValue) consumePendingCapture(); });
   // mudanças feitas em outra superfície (painel ↔ aba cheia) refletem aqui
   chrome.storage.onChanged.addListener(async (changes, area) => {
     if (area !== 'local' || $('#layer').firstChild) return;
     const keys = Object.keys(changes).filter((k) => k.startsWith('crm.') && k !== 'crm.usage' && k !== 'crm.settings');
     if (!keys.length) return;
-    const fresh = await loadAll();
-    const same = ['schema', 'records', 'views'].every((k) => JSON.stringify(fresh[k]) === JSON.stringify(S[k]));
-    if (!same) { S = { ...fresh, settings: S.settings, usage: S.usage }; render(); }
+    let fresh;
+    try { const raw = await loadAll(); fresh = { ...validateState(raw), settings: raw.settings }; } catch { return; }
+    const bare = (views) => views.map(({ _warnings, ...v }) => v);
+    const same = JSON.stringify(fresh.schema) === JSON.stringify(S.schema) && JSON.stringify(fresh.records) === JSON.stringify(S.records)
+      && JSON.stringify(bare(fresh.views)) === JSON.stringify(bare(S.views));
+    if (!same) {
+      const warn = Object.fromEntries(S.views.filter((v) => v._warnings).map((v) => [v.id, v._warnings]));
+      S = { ...fresh, views: fresh.views.map((v) => (warn[v.id] ? { ...v, _warnings: warn[v.id] } : v)), settings: S.settings, usage: S.usage };
+      render();
+    }
   });
-  render();
+  try { render(); } catch (e) { showRecovery(e); return; }
   document.body.dataset.ready = '1';
+  consumePendingCapture();
 }
-init().catch((e) => { document.body.append(h('p', { class: 'err', style: 'padding:12px', text: 'Falha ao iniciar o CRM: ' + e.message })); });
+init().catch((e) => showRecovery(e));

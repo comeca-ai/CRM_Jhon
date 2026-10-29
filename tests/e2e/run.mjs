@@ -12,6 +12,7 @@ const results = [];
 const errors = [];
 async function step(name, fn) {
   const t = Date.now();
+  if (process.env.DEBUG_STATE && globalThis.__panel) console.log('   [estado antes]', await globalThis.__panel.evaluate(async () => ((await chrome.storage.local.get('crm.records'))['crm.records']?.companies || []).map((c) => c.name).join(',')).catch(() => '?'));
   try { const detail = await fn(); results.push({ name, ok: true, ms: Date.now() - t, detail }); console.log('ok  ', name); }
   catch (e) { results.push({ name, ok: false, ms: Date.now() - t, error: String(e?.message || e) }); console.log('FAIL', name, '-', e?.message); }
 }
@@ -22,7 +23,7 @@ const server = http.createServer((req, res) => { res.writeHead(200, { 'content-t
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const site = `http://127.0.0.1:${server.address().port}/sobre`;
 
-const { context, sw, url } = await launchWithExtension({ extraHosts: ['http://127.0.0.1/*', 'https://api.anthropic.com/*'] });
+const { context, sw, url } = await launchWithExtension({ extensionDir: process.env.EXT_DIR || 'extension', extraHosts: ['http://127.0.0.1/*', 'https://api.anthropic.com/*'] });
 const browserVersion = context.browser()?.version() || (await sw.evaluate(() => navigator.userAgent));
 
 // API da Anthropic simulada: devolve uma spec no formato de saída estruturada.
@@ -42,6 +43,7 @@ panel.on('pageerror', (e) => errors.push('panel: ' + e.message));
 // o 401 da API simulada é provocado de propósito no teste de queda para regras
 panel.on('console', (m) => { if (m.type() === 'error' && !(m.location()?.url || '').startsWith('https://api.anthropic.com/')) errors.push('panel console: ' + m.text()); });
 await panel.setViewportSize({ width: 400, height: 760 });
+globalThis.__panel = panel;
 await panel.goto(url('?surface=panel'));
 await panel.waitForSelector('body[data-ready="1"]');
 const shot = (p, name) => p.screenshot({ path: `${SHOTS}/${name}.png` });
@@ -51,7 +53,7 @@ await step('service worker configura abrir painel ao clicar no ícone', async ()
   const b = await sw.evaluate(() => chrome.sidePanel.getPanelBehavior());
   assert(b.openPanelOnActionClick === true, 'openPanelOnActionClick falso');
   const opts = await sw.evaluate(() => chrome.sidePanel.getOptions({}));
-  assert(/app\.html\?surface=panel/.test(opts.path), 'caminho do painel: ' + opts.path);
+  assert(/src\/app\.html$/.test(opts.path), 'caminho do painel: ' + opts.path);
   return opts;
 });
 
@@ -100,6 +102,7 @@ await step('captura a página ativa como empresa (texto da página não vira HTM
   const rec = await panel.evaluate(async () => (await chrome.storage.local.get('crm.records'))['crm.records'].companies[0]);
   assert(rec.name === 'Nuvem Crédito' && rec.timeline[0].kind === 'capture', 'registro capturado errado');
   assert(/comercial@nuvemcredito.example/.test(rec.timeline[0].text), 'e-mail da página não entrou na nota');
+  assert(!/%E0/.test(rec.timeline[0].text), 'e-mail malformado entrou na nota');
   assert(await site_.evaluate(() => window.__xss) === 1, 'controle: a página de teste executa seu próprio onerror');
   assert(await panel.evaluate(() => !window.__xss), 'conteúdo da página executou no painel');
   await site_.close();
@@ -193,6 +196,73 @@ await step('gerador Claude: falha da API cai para regras com aviso', async () =>
   assert(spec.generator === 'rules' && spec.filters[0].value === 'Cliente', 'fallback não gerou por regras');
 });
 
+await step('menu de contexto: captura sem botão do painel abre o formulário', async () => {
+  const pg = await context.newPage();
+  await pg.goto(site);
+  const tabId = await panel.evaluate(async () => (await chrome.tabs.query({ url: 'http://127.0.0.1/*' }))[0].id);
+  await sw.evaluate((id) => globalThis.crmCaptureTab(id), tabId);
+  await panel.waitForSelector('#capture-note');
+  const note = await panel.inputValue('#capture-note');
+  assert(/Capturado de http:\/\/127\.0\.0\.1:\d+\/sobre/.test(note), 'nota sem a URL limpa: ' + note);
+  assert(await panel.inputValue('#f-name') === 'Nuvem Crédito', 'nome não sugerido');
+  await panel.keyboard.press('Escape');
+  await pg.close();
+  return { note: note.slice(0, 90) };
+});
+
+await step('configurações listam os sites com acesso', async () => {
+  await panel.click('#btn-settings');
+  await panel.waitForSelector('#sites li');
+  const items = await panel.locator('#sites li').allTextContents();
+  assert(items.some((t) => t.includes('127.0.0.1')), 'lista de sites: ' + items.join('|'));
+  await panel.keyboard.press('Escape');
+  return items;
+});
+
+await step('backup malicioso é recusado e o armazenamento fica intacto', async () => {
+  const before = await panel.evaluate(async () => JSON.stringify(await chrome.storage.local.get(['crm.schema', 'crm.records', 'crm.views'])));
+  await panel.click('#btn-settings');
+  for (const bad of [{ app: 'crm-generativo', schema: {}, records: {} },
+                     { app: 'crm-generativo', schema: { deals: { label: 'X', fields: [{ id: 'name', label: 'N', type: 'text' }] } }, records: { deals: [] }, views: [{ object: 'constructor', type: 'table' }] , usage: {} }]) {
+    await panel.setInputFiles('#import-file', { name: 'backup.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(bad)) });
+    await panel.waitForTimeout(300);
+    if (Object.keys(bad.schema).length === 0) {
+      const t = await panel.textContent('#toast');
+      assert(/Backup recusado/.test(t), 'mensagem de recusa ausente: ' + t);
+      const after = await panel.evaluate(async () => JSON.stringify(await chrome.storage.local.get(['crm.schema', 'crm.records', 'crm.views'])));
+      assert(after === before, 'armazenamento mudou após backup recusado');
+    } else {
+      // schema mínimo é válido; a tela com objeto herdado é descartada e o app segue funcionando
+      await panel.waitForSelector('body[data-ready="1"]');
+      assert(await panel.locator('#canvas').count() === 1, 'app quebrou');
+      const views = await panel.evaluate(async () => (await chrome.storage.local.get('crm.views'))['crm.views']);
+      assert(views.every((v) => v.object === 'deals'), 'tela com objeto herdado foi gravada');
+      await panel.locator('#toast button', { hasText: 'Desfazer' }).click();
+      await panel.waitForFunction(async () => Object.keys((await chrome.storage.local.get('crm.schema'))['crm.schema']).length === 3);
+      await panel.click('#btn-settings');
+    }
+  }
+  await panel.keyboard.press('Escape');
+});
+
+await step('estado corrompido mostra recuperação e restaura o exemplo', async () => {
+  const p = await context.newPage();
+  await p.setViewportSize({ width: 400, height: 760 });
+  await p.goto(url());
+  await p.waitForSelector('body[data-ready="1"]');
+  const backup = await p.evaluate(async () => JSON.stringify(await chrome.storage.local.get(null)));
+  await p.evaluate(async () => chrome.storage.local.set({ 'crm.schema': { deals: { label: 'Quebrado', fields: 'x' } } }));
+  await p.reload();
+  await p.waitForSelector('text=Os dados salvos do CRM estão inválidos');
+  await p.screenshot({ path: `${SHOTS}/11-painel-recuperacao.png` });
+  await p.getByRole('button', { name: 'Restaurar exemplo' }).click();
+  await p.waitForSelector('body[data-ready="1"]');
+  assert(await p.locator('#chips .chip').count() === 3, 'exemplo não restaurado');
+  await p.evaluate(async (b) => { await chrome.storage.local.set(JSON.parse(b)); }, backup); // sem clear(): outro painel aberto recriaria o exemplo no intervalo
+  await p.close();
+  await panel.reload(); await panel.waitForSelector('body[data-ready="1"]');
+});
+
 await step('aba cheia reflete o mesmo estado', async () => {
   const full = await context.newPage();
   full.on('pageerror', (e) => errors.push('tab: ' + e.message));
@@ -262,7 +332,7 @@ await step('sem erros de JavaScript nas páginas da extensão', async () => { as
 
 await context.close();
 server.close();
-const report = { date: new Date().toISOString(), browser: browserVersion, passed: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, results,
+const report = { date: new Date().toISOString(), artifact: process.env.EXT_DIR || 'extension/', browser: browserVersion, passed: results.filter((r) => r.ok).length, failed: results.filter((r) => !r.ok).length, results,
   limits: ['Painel lateral exercitado como página da extensão a 400 px; o painel nativo do Chrome não é aberto por automação.',
     'Origens http://127.0.0.1 e api.anthropic.com concedidas por manifesto de teste; o diálogo de permissão real não foi clicado.',
     'API da Anthropic simulada; nenhuma chamada real foi feita.'] };

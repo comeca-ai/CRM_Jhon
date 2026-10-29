@@ -147,3 +147,57 @@ test('JSON Schema enviado ao modelo é estrito', () => {
   assert.equal(js.additionalProperties, false);
   assert.deepEqual(js.required.sort(), Object.keys(js.properties).sort());
 });
+
+// ---- achados da revisão de segurança
+import { parseImport, exportPayload } from '../../extension/src/core/store.js';
+import { validateState } from '../../extension/src/core/validate-state.js';
+import { SEED_VIEWS } from '../../extension/src/core/seed.js';
+const good = () => ({ app: 'crm-generativo', schema: structuredClone(SEED_SCHEMA), records: structuredClone(SEED_RECORDS), views: structuredClone(SEED_VIEWS), usage: { 'deals.valor': 3 } });
+
+test('importação recusa schema vazio, objeto herdado e campos fora do formato', () => {
+  assert.throws(() => parseImport(JSON.stringify({ app: 'crm-generativo', schema: {}, records: {} })), /Backup recusado/);
+  assert.throws(() => parseImport(JSON.stringify({ app: 'crm-generativo', schema: [], records: {} })), /Backup recusado/);
+  const noName = good(); noName.schema.deals.fields = noName.schema.deals.fields.filter((f) => f.id !== 'name');
+  assert.throws(() => parseImport(JSON.stringify(noName)), /name/);
+  const badType = good(); badType.schema.deals.fields[1].type = 'script';
+  assert.throws(() => parseImport(JSON.stringify(badType)), /Campo inválido/);
+  const badRec = good(); badRec.records.deals[0].valor = { $gt: 1 };
+  assert.throws(() => parseImport(JSON.stringify(badRec)), /Valor inválido/);
+  assert.throws(() => parseImport('x'.repeat(5 * 1024 * 1024 + 1)), /grande demais/);
+});
+
+test('importação descarta tela com objeto herdado e desduplica ids', () => {
+  const d = good();
+  d.views.push({ object: 'constructor', type: 'table' }, { id: 'v-emp', object: 'companies', type: 'table', columns: ['name'] });
+  const st = parseImport(JSON.stringify(d));
+  assert.equal(st.views.length, 4);
+  assert.equal(new Set(st.views.map((v) => v.id)).size, 4);
+  assert.equal(validateSpec({ object: 'constructor', type: 'table' }, schema).ok, false);
+  assert.equal(validateSpec({ object: '__proto__', type: 'table' }, schema).ok, false);
+});
+
+test('importação válida devolve estado limpo, sem chaves extras nem configurações', () => {
+  const d = good(); d.settings = { generator: 'claude', model: 'outro' }; d.records.deals[0].evil = '<script>';
+  const st = parseImport(JSON.stringify(d));
+  assert.deepEqual(Object.keys(st).sort(), ['records', 'schema', 'usage', 'views']);
+  assert.equal(st.records.deals[0].evil, undefined);
+  assert.equal(st.records.deals.length, 7);
+});
+
+test('exportação remove a chave e o resultado volta pela importação', () => {
+  const state = { ...good(), settings: { apiKey: 'chave-sintetica', generator: 'rules' } };
+  const out = exportPayload(state);
+  assert.ok(!JSON.stringify(out).includes('chave-sintetica'));
+  assert.equal(parseImport(JSON.stringify(out)).records.companies.length, 6);
+});
+
+test('estado sem telas ganha telas padrão por objeto', () => {
+  const d = good(); delete d.views;
+  assert.equal(validateState(d).views.length, 3);
+});
+
+test('captura remove query e fragmento da URL', () => {
+  const r = suggestFromPage({ url: 'https://app.exemplo.com/conta?token=abc#access_token=xyz', title: 'Conta' });
+  assert.equal(r.info.url, 'https://app.exemplo.com/conta');
+  assert.ok(!captureNote(r.info).includes('token'));
+});
