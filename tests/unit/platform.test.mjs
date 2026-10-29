@@ -51,8 +51,8 @@ test('erros do tRPC e de rede viram mensagens em português', async () => {
 
 test('captura de empresa monta o contrato da plataforma com o nome revisado', () => {
   const sug = suggestFromPage({ url: 'https://www.nuvem.com.br/sobre?utm=1', title: 'Nuvem Crédito | Home', siteName: 'Nuvem Crédito', description: 'Crédito para frotas', selection: '', emails: ['a@nuvem.com.br', 'ruim'] });
-  const p = buildCapturePayload(sug, 'companies', { name: 'Nuvem Crédito S.A.' }, '  nota  ');
-  assert.deepEqual(p, { url: 'https://www.nuvem.com.br/sobre', title: 'Nuvem Crédito | Home', siteName: 'Nuvem Crédito', description: 'Crédito para frotas', note: 'nota', emails: ['a@nuvem.com.br'], companyName: 'Nuvem Crédito S.A.' });
+  const p = buildCapturePayload(sug, 'companies', { name: 'Nuvem Crédito S.A.', site: 'https://gruponuvem.com.br' }, '  nota  ');
+  assert.deepEqual(p, { url: 'https://www.nuvem.com.br/sobre', title: 'Nuvem Crédito | Home', siteName: 'Nuvem Crédito', description: 'Crédito para frotas', note: 'nota', emails: ['a@nuvem.com.br'], companyName: 'Nuvem Crédito S.A.', website: 'https://gruponuvem.com.br' });
 });
 
 test('captura de perfil envia contato e empresa do formulário', () => {

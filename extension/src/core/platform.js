@@ -1,6 +1,7 @@
 // Cliente mínimo da plataforma Decida Antes (tRPC + superjson), sem dependências.
 // Login: a sessão do Cloudflare Access que o usuário já abriu no Chrome (cookies do domínio).
 // Sem sessão, o Access responde com redirecionamento ou HTML de login, e isso vira PlatformError('login').
+import { clip } from './capture.js';
 
 export const DEFAULT_ORIGIN = 'https://decidaantes.com.br';
 // A CSP do manifesto só libera estes hosts; qualquer outro endereço é recusado aqui também.
@@ -25,8 +26,6 @@ export function normalizeOrigin(value) {
     return ALLOWED_ORIGIN.test(u.origin) ? u.origin : null;
   } catch { return null; }
 }
-
-export const originPattern = (origin) => `${origin}/*`;
 
 /** Chama uma procedure tRPC. Queries vão por GET; mutações por POST com corpo { json }. */
 export async function callPlatform(origin, path, input, { method = 'POST', fetchImpl = globalThis.fetch } = {}) {
@@ -59,10 +58,7 @@ export async function callPlatform(origin, path, input, { method = 'POST', fetch
   return data && typeof data === 'object' && 'json' in data ? data.json : data;
 }
 
-const text = (v, max) => {
-  const s = String(v ?? '').replace(/\s+/g, ' ').trim();
-  return s ? s.slice(0, max) : undefined;
-};
+const text = (v, max) => clip(v, max) || undefined;
 
 /**
  * Monta a entrada de integrations.captureFromExtension a partir da sugestão da página
@@ -70,6 +66,8 @@ const text = (v, max) => {
  */
 export function buildCapturePayload(sug, object, form = {}, note = '') {
   const info = sug?.info || {};
+  const isPerson = object === 'people';
+  const contactName = isPerson ? text(form.name, 140) : undefined;
   const payload = {
     url: info.url,
     title: text(info.ogTitle || info.title, 300) || sug?.host || info.url,
@@ -77,16 +75,11 @@ export function buildCapturePayload(sug, object, form = {}, note = '') {
     description: text(info.description, 1000),
     selection: text(info.selection, 2000),
     note: text(note, 2000),
-    emails: (info.emails || []).filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)).slice(0, 20)
+    emails: info.emails?.length ? info.emails : undefined, // já filtrados por extractPageInfo
+    companyName: text(isPerson ? form.empresa : form.name, 180),
+    website: isPerson ? undefined : text(form.site, 320), // o site revisado no formulário vale na plataforma
+    contact: contactName?.length >= 2 ? { name: contactName, role: text(form.cargo, 120) } : undefined
   };
-  if (object === 'people') {
-    const name = text(form.name, 140);
-    if (name && name.length >= 2) payload.contact = { name, role: text(form.cargo, 120) };
-    payload.companyName = text(form.empresa, 180);
-  } else {
-    payload.companyName = text(form.name, 180);
-  }
-  if (!payload.emails.length) delete payload.emails;
   for (const k of Object.keys(payload)) if (payload[k] === undefined) delete payload[k];
   return payload;
 }
@@ -102,9 +95,9 @@ export function todaySummary(snapshot, limit = 5) {
   const signals = (s.signals || []).filter((x) => x.status === 'new').slice(0, limit)
     .map((x) => ({ id: x.id, title: x.title, company: x.companyName, source: x.source, confidence: x.confidence }));
   const overdue = (s.overdueActions || []).slice(0, limit)
-    .map((x) => ({ id: x.id, note: x.note, company: x.companyName, dueAt: x.dueAt }));
+    .map((x) => ({ id: x.id, note: x.note, company: x.companyName }));
   const opportunities = (s.opportunities || []).filter((x) => !['won', 'lost'].includes(x.stage)).slice(0, limit)
-    .map((x) => ({ id: x.id, title: x.title, company: x.companyName, priority: x.priorityScore, nextAction: x.nextAction }));
+    .map((x) => ({ id: x.id, title: x.title, company: x.companyName, nextAction: x.nextAction }));
   return {
     workspace: s.organization?.name || 'Decida Antes',
     counts: { toValidate: metrics.toValidate ?? signals.length, overdue: metrics.overdueActions ?? overdue.length, actionsToday: metrics.actionsToday ?? 0, openOpportunities: metrics.openOpportunities ?? opportunities.length },

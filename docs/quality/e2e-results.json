@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-29T18:41:07.903Z",
+  "date": "2026-10-29T19:05:58.634Z",
   "artifact": "/tmp/claude-1001/-home-ubuntu/2bae8a41-8ea3-4084-b53d-210b90d21056/scratchpad/zipcheck",
   "browser": "141.0.7390.37",
   "passed": 22,
@@ -8,7 +8,7 @@
     {
       "name": "service worker configura abrir painel ao clicar no ícone",
       "ok": true,
-      "ms": 17,
+      "ms": 26,
       "detail": {
         "enabled": true,
         "path": "src/app.html"
@@ -17,12 +17,12 @@
     {
       "name": "telas base com dados de exemplo",
       "ok": true,
-      "ms": 102
+      "ms": 121
     },
     {
       "name": "gera tela por linguagem natural (regras)",
       "ok": true,
-      "ms": 77,
+      "ms": 107,
       "detail": {
         "filters": [
           {
@@ -41,21 +41,21 @@
     {
       "name": "kanban: arrastar negócio muda o estágio e registra na linha do tempo",
       "ok": true,
-      "ms": 203
+      "ms": 205
     },
     {
       "name": "captura a página ativa como empresa (texto da página não vira HTML)",
       "ok": true,
-      "ms": 655,
+      "ms": 524,
       "detail": {
         "name": "Nuvem Crédito",
-        "note": "Capturado de http://127.0.0.1:41529/sobre — Plataforma de crédito para pequenas "
+        "note": "Capturado de http://127.0.0.1:44161/sobre — Plataforma de crédito para pequenas "
       }
     },
     {
       "name": "captura sem acesso: explica, pede permissão num clique próprio e captura",
       "ok": true,
-      "ms": 819,
+      "ms": 745,
       "detail": {
         "origins": [
           "https://*/*",
@@ -66,12 +66,12 @@
     {
       "name": "registro: editar campo e adicionar nota entram na linha do tempo",
       "ok": true,
-      "ms": 432
+      "ms": 471
     },
     {
       "name": "aprendizado: após cliques, sugere reordenar e só muda com aceite",
       "ok": true,
-      "ms": 711,
+      "ms": 455,
       "detail": {
         "after": [
           "Empresa",
@@ -85,17 +85,17 @@
     {
       "name": "schema dinâmico: novo campo aparece na tabela",
       "ok": true,
-      "ms": 447
+      "ms": 283
     },
     {
       "name": "exportar JSON nunca inclui a chave da API",
       "ok": true,
-      "ms": 564
+      "ms": 273
     },
     {
       "name": "gerador Claude: pedido estruturado, spec validada e campo inventado descartado",
       "ok": true,
-      "ms": 4381,
+      "ms": 4402,
       "detail": {
         "model": "claude-opus-5-5",
         "card": [
@@ -110,20 +110,20 @@
     {
       "name": "gerador Claude: falha da API cai para regras com aviso",
       "ok": true,
-      "ms": 93
+      "ms": 171
     },
     {
       "name": "menu de contexto: captura sem botão do painel abre o formulário",
       "ok": true,
-      "ms": 297,
+      "ms": 459,
       "detail": {
-        "note": "Capturado de http://127.0.0.1:41529/sobre — Plataforma de crédito para pequenas empresas c"
+        "note": "Capturado de http://127.0.0.1:44161/sobre — Plataforma de crédito para pequenas empresas c"
       }
     },
     {
       "name": "configurações listam os sites com acesso",
       "ok": true,
-      "ms": 150,
+      "ms": 93,
       "detail": [
         "http://127.0.0.1Revogar",
         "https://api.anthropic.comRevogar",
@@ -133,22 +133,22 @@
     {
       "name": "backup malicioso é recusado e o armazenamento fica intacto",
       "ok": true,
-      "ms": 878
+      "ms": 819
     },
     {
       "name": "estado corrompido mostra recuperação e restaura o exemplo",
       "ok": true,
-      "ms": 1330
+      "ms": 999
     },
     {
       "name": "aba cheia reflete o mesmo estado",
       "ok": true,
-      "ms": 738
+      "ms": 540
     },
     {
       "name": "Decida Antes: conecta, envia captura como sinal, trata duplicata e login expirado",
       "ok": true,
-      "ms": 11077,
+      "ms": 13328,
       "detail": {
         "sent": 2,
         "firstPayloadKeys": [
@@ -158,14 +158,15 @@
           "description",
           "note",
           "emails",
-          "companyName"
+          "companyName",
+          "website"
         ]
       }
     },
     {
       "name": "acessibilidade (axe-core, WCAG 2.1 A/AA) no painel, registro e configurações",
       "ok": true,
-      "ms": 1332,
+      "ms": 1325,
       "detail": [
         {
           "label": "painel",
@@ -184,15 +185,15 @@
     {
       "name": "tema escuro renderiza",
       "ok": true,
-      "ms": 436
+      "ms": 643
     },
     {
       "name": "desempenho: abertura do painel e geração de tela",
       "ok": true,
-      "ms": 470,
+      "ms": 428,
       "detail": {
-        "panelOpenMs": 207,
-        "rulesGenerateMs": 83,
+        "panelOpenMs": 190,
+        "rulesGenerateMs": 47,
         "sdkLoadedWithRulesGenerator": false
       }
     },

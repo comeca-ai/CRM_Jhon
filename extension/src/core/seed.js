@@ -1,4 +1,5 @@
 // Schema e dados de exemplo (vindos do protótipo). O schema é dado, não código: o usuário pode estendê-lo.
+import { DEFAULT_ORIGIN } from './platform.js';
 export const SEED_SCHEMA = {
   companies: { label: 'Empresas', singular: 'Empresa', icon: '▦', fields: [
     { id: 'name', label: 'Empresa', type: 'text' },
@@ -64,4 +65,4 @@ export const SEED_VIEWS = [
   { id: 'v-ctt', title: 'Contatos', object: 'people', type: 'table', columns: ['name', 'cargo', 'empresa', 'email', 'owner'], generated: false }
 ];
 
-export const DEFAULT_SETTINGS = { generator: 'rules', model: 'claude-opus-5-5', apiKey: '', dismissed: {}, sampleData: true, platform: { enabled: false, origin: 'https://decidaantes.com.br' } };
+export const DEFAULT_SETTINGS = { generator: 'rules', model: 'claude-opus-5-5', apiKey: '', dismissed: {}, sampleData: true, platform: { enabled: false, origin: DEFAULT_ORIGIN } };

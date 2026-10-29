@@ -338,7 +338,7 @@ await step('Decida Antes: conecta, envia captura como sinal, trata duplicata e l
       overdueActions: [{ id: 3, note: 'Ligar para o financeiro', companyName: 'Frota Sul' }], opportunities: [{ id: 4, stage: 'qualified', title: 'Reembolsa', companyName: 'Frota Sul', priorityScore: 80, nextAction: 'Demonstração' }] });
     if (path.endsWith('/integrations.captureFromExtension')) {
       const body = JSON.parse(req.postData() || '{}');
-      sent.push({ body, credentials: req.headers()['content-type'] });
+      sent.push({ body });
       return ok({ status: sent.length === 1 ? 'processed' : 'duplicate', companyId: 11, companyName: body.json.companyName, companyCreated: sent.length === 1, signalId: 501 });
     }
     return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });

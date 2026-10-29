@@ -22,14 +22,16 @@ export function extractPageInfo() {
   };
 }
 
-const clip = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+// extractPageInfo roda dentro da página e não enxerga constantes do módulo; por isso repete esta regra lá.
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+export const clip = (s, n) => String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
 
 // Normaliza o retorno da página (não confiável) e sugere tipo de registro + valores do formulário.
 export function suggestFromPage(raw) {
   const info = {
     url: clip(raw?.url, 2000), title: clip(raw?.title, 200), description: clip(raw?.description, 500),
     siteName: clip(raw?.siteName, 120), ogTitle: clip(raw?.ogTitle, 200), selection: clip(raw?.selection, 500),
-    emails: Array.isArray(raw?.emails) ? raw.emails.map((e) => clip(e, 120)).slice(0, 5) : []
+    emails: Array.isArray(raw?.emails) ? raw.emails.map((e) => clip(e, 120)).filter((e) => EMAIL_RE.test(e)).slice(0, 5) : []
   };
   let host = '';
   try {

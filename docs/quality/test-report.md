@@ -1,7 +1,7 @@
 # Relatório de testes
 
 Data: 2026-10-29. Navegador: Chromium 141.0.7390.37 (headless, perfil temporário).
-Artefato: `dist/decida-antes-chrome-0.2.0.zip (extraído), sha256 99d512cd4fcd1dd4c146aa62240f3181b85986fc44b9117cb483a16e94ba9c36`. Código: commit que adiciona a ligação com o Decida Antes.
+Artefato: `dist/decida-antes-chrome-0.2.0.zip (extraído), sha256 c264db95ddc5395998eb5f7c1f6ab9db4a250d8fff0f27c0d23b1136df078178`. Código: commit que adiciona a ligação com o Decida Antes.
 
 ## Resumo
 | Conjunto | Resultado |
@@ -18,7 +18,7 @@ Artefato: `dist/decida-antes-chrome-0.2.0.zip (extraído), sha256 99d512cd4fcd1d
 | Gerar tela com o gerador por regras | 61 ms |
 | SDK da Anthropic carregado com o gerador por regras | não (carregado só quando o Claude é usado) |
 
-Pacote: 196 KB compactado, dos quais 165 KB são a fonte Manrope; o SDK (347 KB) só é baixado do próprio pacote quando o gerador Claude é usado.
+Pacote: compactado, com a fonte Manrope em WOFF2 recortada para o português (23 KB); o SDK (347 KB) só é baixado do próprio pacote quando o gerador Claude é usado.
 
 ## Jornadas
 | Jornada | Resultado |

@@ -8,7 +8,7 @@ import { track, ranking, suggestion } from './core/learning.js';
 import { createRecord, updateField, addNote, relativeTime } from './core/records.js';
 import { extractPageInfo, suggestFromPage, captureNote } from './core/capture.js';
 import { validateState } from './core/validate-state.js';
-import { DEFAULT_ORIGIN, PlatformError, normalizeOrigin, originPattern, buildCapturePayload, sendCapture, checkConnection, fetchSnapshot, todaySummary } from './core/platform.js';
+import { DEFAULT_ORIGIN, PlatformError, normalizeOrigin, buildCapturePayload, sendCapture, checkConnection, fetchSnapshot, todaySummary } from './core/platform.js';
 
 const surface = new URLSearchParams(location.search).get('surface') || 'panel';
 let S; // estado: schema, records, views, usage, settings
@@ -379,7 +379,7 @@ function openNew(obj, values = {}, opts = {}) {
           (noteEl = h('textarea', { id: 'capture-note', 'aria-label': 'Nota da captura', maxlength: '2000', value: noteText, oninput: (e) => { noteText = e.target.value; } }))],
         h('p', { class: 'err', id: 'new-err', role: 'alert' }),
         h('div', { class: 'row end' }, h('button', { class: 'btn', type: 'button', text: 'Cancelar', onclick: closeSheet }),
-          h('button', { class: 'btn primary', type: 'button', id: 'btn-save-new', text: opts.capture && platformOn() ? 'Salvar e enviar ao Decida Antes' : 'Salvar', onclick: async (ev) => {
+          h('button', { class: 'btn primary', type: 'button', id: 'btn-save-new', text: opts.saveLabel || 'Salvar', onclick: async (ev) => {
             try {
               ev.currentTarget.disabled = true;
               const data = Object.fromEntries(Object.entries(vals).map(([k, el]) => [k, el.value]));
@@ -392,7 +392,7 @@ function openNew(obj, values = {}, opts = {}) {
               const view = S.views.find((v) => v.object === current && !v.filters?.length) || S.views.find((v) => v.object === current);
               if (view) setActive(view.id); else render();
               const saved = `${S.schema[current].singular} "${rec.name}" salvo.`;
-              if (opts.capture && platformOn()) await sendCaptureToPlatform(buildCapturePayload(opts.sug, current, data, capNote), saved);
+              if (opts.onSaved) await opts.onSaved({ object: current, data, note: capNote, savedMsg: saved });
               else toast(saved, { label: 'Abrir', run: () => openRecord(current, rec.id) });
             } catch (e) { const btn = $('#btn-save-new'); if (btn) btn.disabled = false; $('#new-err').textContent = e.message; }
           } })));
@@ -415,7 +415,12 @@ function openCaptureForm(raw, expectedOrigin) {
   const sug = suggestFromPage(raw);
   if (!sug.ok) return toast(sug.reason);
   if (expectedOrigin && !sug.info.url.startsWith(expectedOrigin)) return toast('A aba mudou de página durante a captura. Tente de novo.');
-  openNew(sug.object, sug.values, { title: 'Capturar página', sub: sug.host, capture: true, note: captureNote(sug.info), sug });
+  const send = platformOn();
+  openNew(sug.object, sug.values, {
+    title: 'Capturar página', sub: sug.host, capture: true, note: captureNote(sug.info),
+    saveLabel: send ? 'Salvar e enviar ao Decida Antes' : undefined,
+    onSaved: send ? ({ object, data, note, savedMsg }) => sendCaptureToPlatform(buildCapturePayload(sug, object, data, note), savedMsg) : undefined
+  });
 }
 
 async function capture() {
@@ -465,17 +470,19 @@ function askSiteAccess() {
 const platformOn = () => Boolean(S.settings.platform?.enabled && normalizeOrigin(S.settings.platform?.origin));
 const platformOrigin = () => normalizeOrigin(S.settings.platform?.origin) || DEFAULT_ORIGIN;
 const openPlatform = (path = '/') => chrome.tabs?.create?.({ url: platformOrigin() + path });
+const platformMsg = (e, fallback) => (e instanceof PlatformError ? e.message : fallback);
+const VIEW_SIGNALS = { label: 'Ver sinais', run: () => openPlatform('/sinais') };
+const LOGIN = { label: 'Entrar', run: () => openPlatform('/') };
 
 async function sendCaptureToPlatform(payload, savedMsg) {
   try {
     const r = await sendCapture(platformOrigin(), payload);
     const where = r?.companyName ? ` para ${r.companyName}` : '';
-    if (r?.status === 'duplicate') return toast(`${savedMsg} Esta página já foi enviada hoje ao Decida Antes${where}.`, { label: 'Ver sinais', run: () => openPlatform('/sinais') });
+    if (r?.status === 'duplicate') return toast(`${savedMsg} Esta página já foi enviada hoje ao Decida Antes${where}.`, VIEW_SIGNALS);
     if (r?.status === 'failed') return toast(`${savedMsg} O Decida Antes registrou a captura, mas não criou o sinal. Tente de novo mais tarde.`);
-    return toast(`${savedMsg} Sinal novo no Decida Antes${where}, para validar.`, { label: 'Ver sinais', run: () => openPlatform('/sinais') });
+    return toast(`${savedMsg} Sinal novo no Decida Antes${where}, para validar.`, VIEW_SIGNALS);
   } catch (e) {
-    const msg = e instanceof PlatformError ? e.message : 'Falha ao enviar ao Decida Antes.';
-    toast(`${savedMsg} ${msg}`, e?.kind === 'login' ? { label: 'Entrar', run: () => openPlatform('/') } : undefined);
+    toast(`${savedMsg} ${platformMsg(e, 'Falha ao enviar ao Decida Antes.')}`, e?.kind === 'login' ? LOGIN : undefined);
   }
 }
 
@@ -496,8 +503,8 @@ function openToday() {
         list('Ações vencidas', t.overdue, '/acoes', (x) => `${x.company} · ${x.note}`),
         list('Oportunidades por prioridade', t.opportunities, '/oportunidades', (x) => `${x.company} · ${x.title}${x.nextAction ? ` → ${x.nextAction}` : ''}`));
     }, (e) => {
-      clear(body, h('p', { class: 'err', role: 'alert', text: e instanceof PlatformError ? e.message : 'Não foi possível carregar o Decida Antes.' }),
-        e?.kind === 'login' && h('div', { class: 'row end' }, h('button', { class: 'btn primary small', type: 'button', text: 'Entrar no Decida Antes', onclick: () => openPlatform('/') })));
+      clear(body, h('p', { class: 'err', role: 'alert', text: platformMsg(e, 'Não foi possível carregar o Decida Antes.') }),
+        e?.kind === 'login' && h('div', { class: 'row end' }, h('button', { class: 'btn primary small', type: 'button', text: 'Entrar no Decida Antes', onclick: LOGIN.run })));
     });
   }, () => $('#btn-today'));
 }
@@ -549,8 +556,8 @@ async function generate(prompt) {
 
 // ---------- configurações ----------
 function platformBox(st, redraw) {
-  const pf = st.platform || { enabled: false, origin: DEFAULT_ORIGIN };
-  const originInp = h('input', { class: 'inp', id: 'platform-origin', value: pf.origin || DEFAULT_ORIGIN, maxlength: '120', 'aria-describedby': 'platform-hint', disabled: pf.enabled });
+  const pf = st.platform; // sempre presente: as configurações salvas são mescladas com DEFAULT_SETTINGS
+  const originInp = h('input', { class: 'inp', id: 'platform-origin', value: pf.origin, maxlength: '120', 'aria-describedby': 'platform-hint', disabled: pf.enabled });
   const status = h('p', { class: 'hint', id: 'platform-status', role: 'status' });
   return h('div', { class: 'box' },
     h('label', { class: 'row' }, h('input', { type: 'checkbox', id: 'platform-on', checked: pf.enabled, onchange: async (e) => {
@@ -558,7 +565,7 @@ function platformBox(st, redraw) {
         const origin = normalizeOrigin(originInp.value);
         if (!origin) { e.target.checked = false; status.textContent = 'Use um endereço https em decidaantes.com.br.'; return; }
         // primeiro passo do gesto: o pedido de permissão do domínio da plataforma
-        const ok = await chrome.permissions.request({ origins: [originPattern(origin)] }).catch(() => false);
+        const ok = await chrome.permissions.request({ origins: [`${origin}/*`] }).catch(() => false);
         if (!ok) { e.target.checked = false; status.textContent = 'Sem permissão para falar com o Decida Antes. Nada mudou.'; return; }
         st.platform = { enabled: true, origin };
       } else st.platform = { ...pf, enabled: false };
@@ -569,7 +576,7 @@ function platformBox(st, redraw) {
     pf.enabled && h('div', { class: 'row end' }, h('button', { class: 'btn small', type: 'button', id: 'platform-test', text: 'Testar conexão', onclick: async () => {
       status.textContent = 'Testando…';
       try { await checkConnection(pf.origin); status.textContent = 'Conectado ao Decida Antes.'; }
-      catch (e) { status.textContent = e instanceof PlatformError ? e.message : 'Falha ao testar a conexão.'; }
+      catch (e) { status.textContent = platformMsg(e, 'Falha ao testar a conexão.'); }
     } })),
     status);
 }

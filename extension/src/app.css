@@ -1,5 +1,5 @@
 /* Identidade Decida Antes: petróleo profundo para confiança, lima para ação (mesmos tokens da plataforma). */
-@font-face{font-family:"Manrope";src:url("../fonts/Manrope-variable.ttf") format("truetype");font-weight:200 800;font-style:normal;font-display:swap}
+@font-face{font-family:"Manrope";src:url("../fonts/Manrope-variable.woff2") format("woff2");font-weight:200 800;font-style:normal;font-display:swap}
 :root{
   --bg:#f5f9f7; --surface:#fff; --ink:#15383a; --ink-2:#4d6b6d; --line:#dfeae6; --soft:#e8f2f0;
   --accent:#123638; --accent-ink:#fff; --good:#0b6448; --warn:#85490a; --bad:#b42318; --gen:#2b6b73;
