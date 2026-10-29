@@ -1,4 +1,4 @@
-# Política de privacidade — CRM Generativo (extensão do Chrome)
+# Política de privacidade — Decida Antes para Chrome
 
 Última atualização: 29/10/2026.
 
@@ -12,7 +12,7 @@ Tudo no armazenamento local da extensão neste navegador (`chrome.storage.local`
 A extensão não funciona em janelas anônimas.
 
 ## Leitura de páginas
-Somente quando você clica em **Capturar página** (ou escolhe **Capturar esta página no CRM** no menu do botão direito), a extensão lê da aba ativa: endereço, título, descrição (meta tags), nome do site, texto que você selecionou e endereços de e-mail em links `mailto:`. Antes de salvar, você vê e pode editar tudo o que vai para o registro, inclusive a nota da captura. Nada é lido em segundo plano.
+Somente quando você clica em **Capturar página** (ou escolhe **Capturar no Decida Antes** no menu do botão direito), a extensão lê da aba ativa: endereço, título, descrição (meta tags), nome do site, texto que você selecionou e endereços de e-mail em links `mailto:`. Antes de salvar, você vê e pode editar tudo o que vai para o registro, inclusive a nota da captura. Nada é lido em segundo plano.
 
 Acesso a sites: pelo menu do botão direito ou logo após abrir o painel pelo ícone, o acesso vale só para aquela aba naquele momento. Fora disso, o Chrome não mostra ao painel nem o endereço da aba, então o botão do painel pede, numa janela própria e com a sua confirmação, **leitura dos sites que você abrir**. Essa permissão continua valendo até você revogar em **Configurações → Sites com acesso** (ou em `chrome://extensions`), e mesmo com ela a leitura só acontece quando você clica em Capturar. Páginas internas do Chrome nunca são lidas, e nelas a extensão não pede acesso.
 

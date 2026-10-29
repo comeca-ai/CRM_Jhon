@@ -299,7 +299,7 @@ await step('estado corrompido mostra recuperação e restaura o exemplo', async 
   const backup = await p.evaluate(async () => JSON.stringify(await chrome.storage.local.get(null)));
   await p.evaluate(async () => chrome.storage.local.set({ 'crm.schema': { deals: { label: 'Quebrado', fields: 'x' } } }));
   await p.reload();
-  await p.waitForSelector('text=Os dados salvos do CRM estão inválidos');
+  await p.waitForSelector('text=Os dados salvos na extensão estão inválidos');
   await p.screenshot({ path: `${SHOTS}/11-painel-recuperacao.png` });
   await p.getByRole('button', { name: 'Restaurar exemplo' }).click();
   await p.waitForSelector('body[data-ready="1"]');
@@ -421,7 +421,7 @@ await step('tema escuro renderiza', async () => {
   await dark.waitForSelector('body[data-ready="1"]');
   await dark.locator('#chips .chip', { hasText: 'Pipeline' }).click();
   const bg = await dark.evaluate(() => getComputedStyle(document.body).backgroundColor);
-  assert(bg === 'rgb(16, 19, 25)', 'fundo escuro não aplicado: ' + bg);
+  assert(bg === 'rgb(12, 31, 32)', 'fundo escuro não aplicado: ' + bg);
   await dark.screenshot({ path: `${SHOTS}/10-painel-escuro.png` });
   await dark.close();
 });

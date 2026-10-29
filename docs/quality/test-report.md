@@ -1,7 +1,7 @@
 # Relatório de testes
 
 Data: 2026-10-29. Navegador: Chromium 141.0.7390.37 (headless, perfil temporário).
-Artefato: `dist/crm-generativo-0.1.0.zip (extraído), sha256 3fbc7f7f3f1c6800a09c3704922f2fcee348a8e244f0c731b4970d43269c0114`. Código: commit que adiciona a ligação com o Decida Antes.
+Artefato: `dist/decida-antes-chrome-0.2.0.zip (extraído), sha256 99d512cd4fcd1dd4c146aa62240f3181b85986fc44b9117cb483a16e94ba9c36`. Código: commit que adiciona a ligação com o Decida Antes.
 
 ## Resumo
 | Conjunto | Resultado |
@@ -14,11 +14,11 @@ Artefato: `dist/crm-generativo-0.1.0.zip (extraído), sha256 3fbc7f7f3f1c6800a09
 ## Desempenho medido
 | Medida | Valor |
 |---|---|
-| Abertura do painel até pronto | 180 ms |
-| Gerar tela com o gerador por regras | 58 ms |
+| Abertura do painel até pronto | 192 ms |
+| Gerar tela com o gerador por regras | 61 ms |
 | SDK da Anthropic carregado com o gerador por regras | não (carregado só quando o Claude é usado) |
 
-Pacote: 117 KB compactado; o SDK (347 KB) só é baixado do próprio pacote quando o gerador Claude é usado.
+Pacote: 196 KB compactado, dos quais 165 KB são a fonte Manrope; o SDK (347 KB) só é baixado do próprio pacote quando o gerador Claude é usado.
 
 ## Jornadas
 | Jornada | Resultado |

@@ -1,4 +1,4 @@
-// CRM Generativo — interface do painel lateral e da aba cheia.
+// Decida Antes para Chrome — interface do painel lateral e da aba cheia.
 import { h, clear, $ } from './dom.js';
 import { loadAll, save, exportPayload, parseImport, resetAll } from './core/store.js';
 import { validateSpec, applySpec, groupValues, describeFilter, displayValue, formatMoney, FIELD_TYPES, GROUPABLE } from './core/spec.js';
@@ -168,7 +168,7 @@ function renderCanvas() {
   $('#vgen').hidden = !v.generated;
   $('#vgen').textContent = v.generator === 'claude' ? 'gerada pelo Claude' : 'gerada pela IA';
   $('#vcount').textContent = `${rows.length} ${rows.length === 1 ? 'registro' : 'registros'}`;
-  document.title = `${v.title} · CRM Generativo`;
+  document.title = `${v.title} · Decida Antes`;
   if (!all.length) {
     clear(canvas, h('div', { class: 'empty' }, h('p', { text: `Ainda não há ${S.schema[v.object].label.toLowerCase()}.` }),
       h('div', { class: 'row', style: 'justify-content:center' }, h('button', { class: 'btn primary', type: 'button', text: 'Capturar página', onclick: capture }),
@@ -457,7 +457,7 @@ function askSiteAccess() {
             capture();
           }, () => { closeSheet(); toast('O Chrome não abriu o pedido de permissão. Tente de novo.'); });
         } })),
-      h('p', { class: 'hint', text: 'Prefere não liberar? Clique com o botão direito na página e escolha "Capturar esta página no CRM". Assim o acesso vale só para aquela vez.' }));
+      h('p', { class: 'hint', text: 'Prefere não liberar? Clique com o botão direito na página e escolha "Capturar no Decida Antes". Assim o acesso vale só para aquela vez.' }));
   }, () => $('#btn-capture'));
 }
 
@@ -700,9 +700,9 @@ const TYPE_LABEL = { text: 'texto', number: 'número', money: 'dinheiro', percen
 // ---------- início ----------
 function showRecovery(err) {
   clear(document.body, h('main', { class: 'sheet', style: 'width:100%;box-shadow:none', role: 'alert' },
-    h('h2', { text: 'Os dados salvos do CRM estão inválidos' }),
+    h('h2', { text: 'Os dados salvos na extensão estão inválidos' }),
     h('p', { class: 'hint', text: String(err?.message || err) }),
-    h('p', { text: 'Você pode restaurar os dados de exemplo para voltar a usar o CRM. Os dados atuais serão substituídos.' }),
+    h('p', { text: 'Você pode restaurar os dados de exemplo para voltar a usar a extensão. Os dados atuais serão substituídos.' }),
     h('div', { class: 'row' }, h('button', { class: 'btn primary', type: 'button', text: 'Restaurar exemplo', onclick: async () => { await resetAll(); location.reload(); } }))));
 }
 

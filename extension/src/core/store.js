@@ -40,7 +40,7 @@ export function parseImport(text) {
   if (typeof text !== 'string' || text.length > MAX_IMPORT_BYTES) throw new Error('Arquivo grande demais (limite de 5 MB).');
   let data;
   try { data = JSON.parse(text); } catch { throw new Error('Arquivo não é um JSON válido.'); }
-  if (!data || data.app !== 'crm-generativo') throw new Error('Arquivo não é um backup do CRM Generativo.');
+  if (!data || data.app !== 'crm-generativo') throw new Error('Arquivo não é um backup da extensão Decida Antes.');
   try { return validateState(data); } catch (e) { throw new Error('Backup recusado: ' + e.message); }
 }
 

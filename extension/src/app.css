@@ -1,12 +1,15 @@
+/* Identidade Decida Antes: petróleo profundo para confiança, lima para ação (mesmos tokens da plataforma). */
+@font-face{font-family:"Manrope";src:url("../fonts/Manrope-variable.ttf") format("truetype");font-weight:200 800;font-style:normal;font-display:swap}
 :root{
-  --bg:#f6f7f9; --surface:#fff; --ink:#1a1f2b; --ink-2:#596273; --line:#e1e5eb; --soft:#eef1f6;
-  --accent:#2550cc; --accent-ink:#fff; --good:#0b6448; --warn:#85490a; --bad:#b42318; --gen:#7036d6;
-  --font:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --bg:#f5f9f7; --surface:#fff; --ink:#15383a; --ink-2:#4d6b6d; --line:#dfeae6; --soft:#e8f2f0;
+  --accent:#123638; --accent-ink:#fff; --good:#0b6448; --warn:#85490a; --bad:#b42318; --gen:#2b6b73;
+  --lime:#baf36d; --lime-ink:#123638;
+  --font:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --r:9px; color-scheme:light;
 }
 @media (prefers-color-scheme:dark){:root{
-  --bg:#101319; --surface:#181c25; --ink:#e8eaf0; --ink-2:#a3abbd; --line:#2b3140; --soft:#222837;
-  --accent:#7b97ff; --accent-ink:#0d1220; --good:#45d39d; --warn:#eaa95a; --bad:#ff8a80; --gen:#b28cff; color-scheme:dark;
+  --bg:#0c1f20; --surface:#123033; --ink:#e7f3ef; --ink-2:#a6c0bc; --line:#24474a; --soft:#1a3d40;
+  --accent:#baf36d; --accent-ink:#0f2d2f; --good:#7fe0b4; --warn:#f2c46b; --bad:#ff9b8f; --gen:#9fd8de; color-scheme:dark;
 }}
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
@@ -27,7 +30,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 #side{display:none;width:220px;flex:none;border-right:1px solid var(--line);padding:14px 10px;overflow-y:auto}
 .ws{display:flex;align-items:center;gap:8px;padding:2px 6px 12px}
 .ws small{display:block;color:var(--ink-2);font-size:11px}
-.dot{width:24px;height:24px;border-radius:7px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
+.dot{width:24px;height:24px;border-radius:7px 7px 7px 2px;background:var(--lime);color:var(--lime-ink);display:grid;place-items:center;font-weight:700;font-size:12px;flex:none}
 .navhead{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding:12px 6px 4px;margin:0;font-weight:600}
 .navitem{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;border:0;background:none;width:100%;text-align:left;cursor:pointer}
 .navitem:hover,.navitem[aria-current="true"]{background:var(--soft)}
@@ -40,7 +43,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 #top{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--surface);flex-wrap:wrap}
 #top .actions{margin-left:auto}
 @media (max-width:899px){ #top .titlewrap{order:3;flex:0 0 100%} #top .titlewrap #vtitle{font-size:15px} .badges{flex-wrap:nowrap;overflow:hidden} #top .appname{display:block} }
-.appname{display:none;font-weight:700;font-size:13px}
+.appname{display:none;font-weight:800;font-size:13px;letter-spacing:-.03em}
 .titlewrap{flex:1;min-width:0}
 #vtitle{font-size:15px;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:2px}

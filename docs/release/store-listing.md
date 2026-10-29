@@ -1,7 +1,7 @@
 # Ficha da Chrome Web Store (rascunho)
 
-**Nome:** CRM Generativo
-**Resumo (até 132 caracteres):** CRM no painel lateral: capture empresas e contatos da página aberta e crie telas descrevendo-as em português.
+**Nome:** Decida Antes
+**Resumo (até 132 caracteres):** Capture empresas e contatos da página aberta como sinais com evidência no Decida Antes, direto do painel lateral.
 **Categoria:** Produtividade (Ferramentas de trabalho)
 **Idioma:** Português (Brasil)
 

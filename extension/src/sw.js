@@ -1,4 +1,4 @@
-// Service worker: prepara o painel, os dados de exemplo e o item "Capturar esta página no CRM" do menu de contexto.
+// Service worker: prepara o painel, os dados de exemplo e o item "Capturar no Decida Antes" do menu de contexto.
 // O menu de contexto concede activeTab só para aquela aba e aquele momento, sem acesso permanente ao site.
 import { ensureSeeded } from './core/store.js';
 import { extractPageInfo } from './core/capture.js';
@@ -8,7 +8,7 @@ const MENU_ID = 'crm-capture';
 chrome.runtime.onInstalled.addListener(async () => {
   await ensureSeeded();
   await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
-  chrome.contextMenus.create({ id: MENU_ID, title: 'Capturar esta página no CRM', contexts: ['page', 'selection'] }, () => void chrome.runtime.lastError);
+  chrome.contextMenus.create({ id: MENU_ID, title: 'Capturar no Decida Antes', contexts: ['page', 'selection'] }, () => void chrome.runtime.lastError);
 });
 
 chrome.runtime.onStartup.addListener(() => {

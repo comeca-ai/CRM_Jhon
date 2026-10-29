@@ -28,7 +28,7 @@ const check = (c, m) => { if (!c) throw new Error(m); console.log('ok  ', m); };
 
 await page.goto(url);
 check(await page.locator('a[download]').count() === 1, 'página inicial com link do .zip');
-const zip = await page.request.get(new URL('crm-generativo-0.1.0.zip', url).href);
+const zip = await page.request.get(new URL('decida-antes-chrome.zip', url).href);
 check(zip.ok() && (await zip.body()).length > 100000, '.zip baixável');
 await page.screenshot({ path: 'docs/screenshots/12-demo-web-inicio.png', fullPage: false });
 

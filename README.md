@@ -1,4 +1,6 @@
-# CRM Generativo (CRM_Jhon)
+# Decida Antes para Chrome (CRM_Jhon)
+
+> Desde a versão 0.2.0, esta extensão é a companheira de navegador do **Decida Antes** (`comeca-ai/decidaantes`): mesma marca, mesmo login (Cloudflare Access) e a mesma regra. Toda captura vira um **sinal com evidência** para validação humana, como as integrações e, depois, o MCP. O CRM local continua funcionando como modo de demonstração e uso sem plataforma. Este repositório guarda a origem do projeto, o CRM Generativo.
 
 CRM no estilo Attio, mas com uma diferença central: **as telas não são fixas — a IA escreve e evolui as telas** conforme aprende como o time usa o sistema.
 
@@ -26,7 +28,7 @@ Três camadas:
 
 1. Abra `chrome://extensions` e ligue o **Modo do desenvolvedor**.
 2. Clique em **Carregar sem compactação** e escolha a pasta `extension/`.
-3. Clique no ícone do CRM Generativo na barra: o painel lateral abre. O botão ⤢ abre a versão em tela cheia.
+3. Clique no ícone do Decida Antes na barra: o painel lateral abre. O botão ⤢ abre a versão em tela cheia.
 
 ### Demonstração web
 

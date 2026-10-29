@@ -31,7 +31,7 @@ for p in files:
 if errors:
     print('\n'.join(errors)); sys.exit(1)
 
-out = root / 'dist' / f"crm-generativo-{mf['version']}.zip"
+out = root / 'dist' / f"decida-antes-chrome-{mf['version']}.zip"
 out.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
     for p in files:
